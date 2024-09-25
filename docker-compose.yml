@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: ./sdl-backend-main
+      dockerfile: dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      - PG_NAME=sdls_fullstack_postgres1
+    networks:
+      - agent_network
+  front:
+    build:
+      context: ./sdl-frontend-main
+      dockerfile: dockerfile
+    ports:
+      - 5173:5173
+    networks:
+      - agent_network
+  postgres:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - agent_network
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped 
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=wulab@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=ytwu35415
+    ports:
+      - "5555:80"
+    networks:
+      - agent_network
+networks:
+  agent_network:
