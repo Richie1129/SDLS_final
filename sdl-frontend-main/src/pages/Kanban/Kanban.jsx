@@ -186,15 +186,15 @@ export default function Kanban() {
         newGroupName
       });
       socket.on("ColumnCreatedSuccess", async () => {
-        // 使与看板数据相关的查询失效，以触发重新获取
+        // 使與看板資料相關的查詢失效，以觸發重新獲取
         try {
           const updatedKanbanData = await getKanbanColumns(projectId);
           console.log("updatedKanbanData:", updatedKanbanData)
-          setKanbanData(updatedKanbanData); // 使用最新数据更新状态
+          setKanbanData(updatedKanbanData); // 使用最新數據更新狀態
         } catch (error) {
-          console.error("获取看板列数据失败:", error);
+          console.error("獲取看板列數據失敗：", error);
         }
-        // 清空输入框并隐藏添加组的输入框
+        // 清空輸入框並隱藏新增群組的輸入框
         setNewGroupName('');
         setShowAddGroupInput(false);
       });
@@ -240,8 +240,8 @@ export default function Kanban() {
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="flex space-x-4 overflow-x-auto h-[calc(100vh-12rem)] scrollbar-none overflow-y-hidden" // 添加 overflow-x-auto 以启用水平滚动
-                style={{ display: 'inline-flex', flexDirection: 'row', paddingBottom: '1rem' }} // 确保列是水平排列的，并且底部有足够空间
+                className="flex space-x-4 overflow-x-auto h-[calc(100vh-12rem)] scrollbar-none overflow-y-hidden" // 添加 overflow-x-auto 以啟用水平滾動
+                style={{ display: 'inline-flex', flexDirection: 'row', paddingBottom: '1rem' }} // 確保列是水平排列的，並且底部有足夠空間
               >
                 {!showAddGroupInput && (
                   <button className="bg-[#5BA491] hover:bg-[#5BA491]/90 w-60 h-24 flex flex-row items-center rounded-lg border-none p-7" onClick={toggleAddGroupInput}>

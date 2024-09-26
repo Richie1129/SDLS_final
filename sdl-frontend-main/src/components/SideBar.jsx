@@ -16,7 +16,7 @@ import { TbMessageQuestion } from "react-icons/tb";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 // import { socket } from '../utils/Socket';
 import { Context } from '../context/context'
-
+import { TbZoomQuestion } from "react-icons/tb";
 import ChatRoom from './ChatRoom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 
@@ -127,7 +127,7 @@ export default function SideBar() {
     }
 
     if (role === "student") {
-        menus.push({ name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbMessageQuestion });
+        menus.push({ name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion });
     }
 
     const [stageInfo, setStageInfo] = useState({ name: "", description: "" });

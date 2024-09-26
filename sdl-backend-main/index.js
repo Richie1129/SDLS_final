@@ -17,6 +17,7 @@ const Kanban = require('./models/kanban');
 const Node = require('./models/node');
 const Node_relation = require('./models/node_relation');
 const Chatroom_message = require('./models/chatroom_message');
+const Rag_message = require('./models/rag_message')
 const Project = require('./models/project')
 const QuestionMessage = require('./models/question_message')
 
@@ -59,7 +60,7 @@ io.on("connection", (socket) => {
     socket.on("send_message", async (data) => {
         console.log(data);
         try {
-            // 存储消息到数据库
+            // 存儲消息到數據庫
             await Chatroom_message.create({
                 message: data.message,
                 author: data.author,
@@ -67,7 +68,7 @@ io.on("connection", (socket) => {
                 projectId: data.room
             });
         } catch (error) {
-            console.error("保存消息时出错：", error);
+            console.error("保存消息時出錯：", error);
         }
         socket.to(data.room).emit("receive_message", data);
     });
@@ -75,19 +76,57 @@ io.on("connection", (socket) => {
     socket.on("send_QuestionMessage", async (data) => {
         console.log("Question Message Received:", data);
         try {
-            // 存储消息到数据库
+            // 存儲消息到數據庫
             await QuestionMessage.create({
                 message: data.message,
                 author: data.author,
                 questionId: data.questionId
             });
-            // 发送消息到同一聊天室的其他用户
+            // 發送消息到同一聊天室的其他用户
 
         } catch (error) {
-            console.error("保存提问消息时出错：", error);
+            console.error("保存提问消息時出錯：", error);
         }
         socket.to(data.questionId).emit("receive_QuestionMessage", data);
     });
+    // send rag_message
+    socket.on("rag_message", async (data) => {
+        console.log("接收到的資料：", data); // 打印接收到的資料
+        try {
+            if (data.messageType === 'input') {
+                // 當接收到 input_message 時，創建新的資料庫紀錄，並儲存其 ID
+                const newMessage = await Rag_message.create({
+                    input_message: data.message,  // 儲存 input_message
+                    author: data.author,
+                    userId: data.creator
+                });
+    
+                // 將訊息的 ID 返回前端，便於後續 response_message 更新
+                socket.emit('input_stored', { id: newMessage.id });
+            } else if (data.messageType === 'response') {
+                // 當接收到 response_message 時，根據前端返回的 messageId 進行更新
+                await Rag_message.update(
+                    {
+                        response_message: data.message,  // 更新 response_message
+                        author: data.author || 'system'  // 如果未提供 author，設為 'system'
+                    },
+                    {
+                        where: {
+                            id: data.messageId,  // 根據 messageId 來匹配對應的 input_message
+                            userId: data.creator
+                        }
+                    }
+                );
+            }
+        } catch (error) {
+            console.error("保存消息時出錯：", error);
+        }
+    
+        // 將訊息發送到對應的房間
+        socket.to(data.room).emit("receive_rag_message", data);
+    });
+    
+    
     //create card
     socket.on("taskItemCreated", async (data) => {
         try {
@@ -117,7 +156,7 @@ io.on("connection", (socket) => {
             });
             io.to(projectId).emit("taskItems", addIntoTaskArray);
         } catch (error) {
-            console.error("处理 taskItemCreated 时出错：", error);
+            console.error("處理 taskItemCreated 時出錯：", error);
         }
     })
     //update card
@@ -249,21 +288,21 @@ io.on("connection", (socket) => {
             io.to(projectId).emit("ColumnCreatedSuccess", addIntoColumnArray);
 
         } catch (error) {
-            console.error("处理 ColumnCreated 时出错：", error);
+            console.error("處理 ColumnCreated 時出錯：", error);
         }
     })
     //drag column
     socket.on("columnOrderChanged", async (data) => {
         const { kanbanData, kanbanId } = data;
 
-        // 发送更新事件以及打印日志
+        // 發送更新事件以及打印日誌
         // io.sockets.emit("columnOrderUpdated", kanbanData);
         io.to(kanbanId).emit("columnOrderUpdated", kanbanData);
 
         // console.log("kanbanData", kanbanData);
         // console.log("kanbanId", kanbanId);
 
-        // 提取每个列的id到一个数组中
+        // 提取每個列的id到一个數组中
         const columnIds = kanbanData.map(column => column.id);
         // console.log("Column IDs:", columnIds);
 
@@ -306,10 +345,10 @@ io.on("connection", (socket) => {
 
                 // Step 2: Delete all tasks associated with the column
                 try {
-                    // 首先从 columnData.task 中提取所有任务的 ID
+                    // 首先從 columnData.task 中提取所有任務的 ID
                     const taskIds = columnData.task.map(task => task.id);
 
-                    // 然后使用这些 ID 来删除 Task 表中的相关记录
+                    // 然后使用這些 ID 来删除 Task 表中的相關紀錄
                     const deleteTasks = await Task.destroy({
                         where: {
                             id: {
@@ -318,9 +357,9 @@ io.on("connection", (socket) => {
                         }
                     });
 
-                    console.log("已成功删除任务，任务ID:", taskIds);
+                    console.log("已成功删除任務，任務ID:", taskIds);
                 } catch (error) {
-                    console.error("删除任务时发生错误:", error);
+                    console.error("删除任務時發生錯誤:", error);
                 }
 
                 // Step 3: Delete the column itself
@@ -353,7 +392,7 @@ io.on("connection", (socket) => {
     //Create Submit
     socket.on('taskSubmitted', (data) => {
         console.log('Task submitted:', data);
-        // 将事件广播到所有连接的客户端，除了发送消息的客户端
+        // 將事件廣播到所有連接的客戶端，除了發送消息的客戶端
         // io.sockets.emit("taskItems", addIntoTaskArray);
 
         socket.broadcast.emit('refreshKanban', data);
