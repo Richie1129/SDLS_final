@@ -18,7 +18,11 @@ const Task = sequelize.define('task', {
     assignees: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull:true
-    },   
+    },
+    image: {
+        type: DataTypes.BLOB, // 使用 BLOB 儲存圖片二進制數據
+        allowNull: true,
+    }, 
 });
 
 Task.belongsToMany(Tag, {through:"Card_Tag"});

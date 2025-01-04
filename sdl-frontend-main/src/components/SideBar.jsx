@@ -21,7 +21,6 @@ import ChatRoom from './ChatRoom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 
 
-
 const AnimatedHamburgerButton = () => {
     const [active, setActive] = useState(false);
 
@@ -113,11 +112,14 @@ export default function SideBar() {
         { name: "進度看板", link: `/project/${projectId}/kanban`, icon: MdOutlineViewKanban },
         { name: "想法延伸", link: `/project/${projectId}/ideaWall`, icon: FaRegLightbulb },
         { name: "反思日誌", link: `/project/${projectId}/reflection`, icon: CgNotes },
-        { name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask },
+        // { name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask },
         { name: "歷程檔案", link: `/project/${projectId}/protfolio`, icon: TiFolderOpen },
         { name: "提問專區", link: `/project/${projectId}/askQuestion`, icon: TbMessageQuestion }
     ];
 
+    if (role === "student") {
+        menus.push({ name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask });
+    }
     if (role === "teacher") {
         menus.push({ name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard });
     }

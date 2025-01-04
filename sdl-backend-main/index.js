@@ -1,5 +1,6 @@
 require('dotenv').config()
 const express = require('express');
+const path = require('path');
 const sequelize = require('./util/database');
 const bodyParser = require('body-parser');
 const cors = require("cors");
@@ -9,6 +10,7 @@ const Sequelize = require('sequelize');
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
+const { upload } = require('./middlewares/uploadMiddleware'); // 引用上傳中介軟體
 const { Socket } = require('dgram');
 const server = http.createServer(app);
 const Task = require('./models/task');
@@ -26,18 +28,25 @@ const { rm } = require('fs');
 const io = new Server(server, {
     cors: {
         origin: "http://localhost:5173",
-        methods: ['GET', 'PUT', 'POST', 'DELETE'],
+        methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 });
 
 app.use(cors({
     origin: "http://localhost:5173",
-    methods: ['GET', 'PUT', 'POST', 'DELETE'],
+    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
+
+app.options('*', cors()); // 處理所有路由的預檢請求
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+// 靜態資源服務
+app.use('/daily_file', express.static(path.join(__dirname, 'daily_file')));
+console.log('Static file directory:', path.join(__dirname, 'daily_file'));
+
 
 io.on("connection", (socket) => {
     console.log(`${socket.id} a user connected`);
@@ -476,6 +485,27 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log(`${socket.id} a user disconnected`)
     });
+});
+
+// 新增檔案上傳路由
+app.post('/api/upload', upload.array('files', 10), (req, res) => {
+    console.log('Uploaded files:', req.files); // 打印文件信息
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded' });
+        }
+
+        const files = req.files.map((file) => ({
+            url: `/daily_file/${file.filename}`,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+        }));
+
+        res.status(200).json({ files });
+    } catch (error) {
+        console.error('檔案上傳失敗:', error);
+        res.status(500).json({ message: '檔案上傳失敗', error: error.message });
+    }
 });
 
 //api routes

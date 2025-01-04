@@ -308,16 +308,9 @@ export default function Reflection() {
 
                                                 <motion.div
                                                     drag="x"
-                                                    dragConstraints={{
-                                                        left: 0,
-                                                        right: 0,
-                                                    }}
-                                                    style={{
-                                                        x: dragX,
-                                                    }}
-                                                    animate={{
-                                                        translateX: `-${imgIndex * 100}%`,
-                                                    }}
+                                                    dragConstraints={{ left: 0, right: 0,}}
+                                                    style={{ x: dragX, }}
+                                                    animate={{ translateX: `-${imgIndex * 100}%`, }}
                                                     transition={SPRING_OPTIONS}
                                                     onDragEnd={onDragEnd}
                                                     className="flex cursor-grab j items-center active:cursor-grabbing"
@@ -326,13 +319,8 @@ export default function Reflection() {
                                                         personalDaily.map((item, index) => (
                                                             <motion.div
                                                                 key={index}
-                                                                style={{
-                                                                    backgroundSize: "cover",
-                                                                    backgroundPosition: "center",
-                                                                }}
-                                                                animate={{
-                                                                    scale: imgIndex === index ? 1 : 0.9,
-                                                                }}
+                                                                style={{ backgroundSize: "cover", backgroundPosition: "center", }}
+                                                                animate={{ scale: imgIndex === index ? 1 : 0.9, }}
                                                                 transition={SPRING_OPTIONS}
                                                                 className="aspect-video w-full shrink-0 rounded-xl object-cover"
                                                             >
@@ -366,7 +354,6 @@ export default function Reflection() {
                                                                             編輯
                                                                         </button>
                                                                     </div>
-
                                                                 </div>
                                                             </motion.div>
                                                         ))
@@ -384,10 +371,8 @@ export default function Reflection() {
                                                         );
                                                     })}
                                                 </div>
-
                                             </div>
-                                        )
-                            }
+                                        )}
                         </div>
                     </div>
                 </div>
@@ -425,16 +410,9 @@ export default function Reflection() {
                                             < div className="relative overflow-hidden w-[45vw] py-8">
                                                 <motion.div
                                                     drag="x"
-                                                    dragConstraints={{
-                                                        left: 0,
-                                                        right: 0,
-                                                    }}
-                                                    style={{
-                                                        x: TeamDragX,
-                                                    }}
-                                                    animate={{
-                                                        translateX: `-${TeamImgIndex * 100}%`,
-                                                    }}
+                                                    dragConstraints={{ left: 0, right: 0,}}
+                                                    style={{ x: TeamDragX, }}
+                                                    animate={{ translateX: `-${TeamImgIndex * 100}%`, }}
                                                     transition={SPRING_OPTIONS}
                                                     onDragEnd={TeamOnDragEnd}
                                                     className="flex cursor-grab j items-center active:cursor-grabbing"
@@ -443,13 +421,8 @@ export default function Reflection() {
                                                         teamDaily.map((item, index) => (
                                                             <motion.div
                                                                 key={index}
-                                                                style={{
-                                                                    backgroundSize: "cover",
-                                                                    backgroundPosition: "center",
-                                                                }}
-                                                                animate={{
-                                                                    scale: TeamImgIndex === index ? 1 : 0.9,
-                                                                }}
+                                                                style={{ backgroundSize: "cover", backgroundPosition: "center", }}
+                                                                animate={{ scale: TeamImgIndex === index ? 1 : 0.9, }}
                                                                 transition={SPRING_OPTIONS}
                                                                 className="aspect-video w-full shrink-0 rounded-xl object-cover"
                                                             >
@@ -502,13 +475,11 @@ export default function Reflection() {
 
                                             </div>
 
-                                        )
-                            }
+                                        )}
                         </div>
                     </div>
                 </div>
             </div>
-
 
             {/* 個人反思日誌 */}
             <Modal open={personalDailyModalOpen} onClose={() => setPersonalDailyModalOpen(false)} opacity={true} position={"justify-center items-center"}>

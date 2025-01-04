@@ -1,119 +1,101 @@
-const Submit = require('../models/submit')
-const Project = require('../models/project')
+const Submit = require('../models/submit');
+const Project = require('../models/project');
 const Idea_wall = require('../models/idea_wall');
 const Process = require('../models/process');
 const Stage = require('../models/stage');
+const fs = require('fs').promises;
 
 exports.createSubmit = async(req, res) => {
-    const {currentStage, currentSubStage, content, projectId} = req.body;
+    const { currentStage, currentSubStage, content, projectId } = req.body;
     const currentStageInt = parseInt(currentStage);
     const currentSubStageInt = parseInt(currentSubStage);
 
-    const fs = require('fs').promises; // 使用 Promise 接口
+    console.log("接收到的資料:", req.body); // 檢查 `req.body` 是否有接收到資料
+    console.log("接收到的檔案:", req.files); // 檢查 `req.files` 是否有檔案上傳
 
-    if(!content){
-        return res.status(404).send({message: 'please fill in the form !'})
+    if (!content) {
+        return res.status(404).send({ message: '請填寫表單!' });
     }
-    if(req.files.length > 0){
-        try {
+
+    try {
+        // 如果有檔案上傳
+        if (req.files && req.files.length > 0) {
             await Promise.all(req.files.map(async (item) => {
-                // const fileData = item.fileData;
-                console.log("CreateItem:",item)
-               
+                console.log("正在處理檔案:", item);
+
                 const fileData = await fs.readFile(item.path);
                 
                 return Submit.create({
                     stage: `${currentStageInt}-${currentSubStageInt}`,
                     content: content,
                     projectId: projectId,
-                    fileData: fileData ,
+                    fileData: fileData,
                     fileName: item.filename
                 });
             }));
-        } catch(err) {
-            console.log(err);
-            return res.status(500).send({message: 'create failed!'});
+        } else {
+            // 沒有檔案上傳
+            await Submit.create({
+                stage: `${currentStageInt}-${currentSubStageInt}`,
+                content: content,
+                projectId: projectId,
+            });
         }
-    }else{
-        await Submit.create({
-            stage: `${currentStageInt}-${currentSubStageInt}`,
-            content: content,
-            projectId: projectId,
-        })
-    }
-    //check next stage
-    const process = await Process.findAll({ 
-        attributes:[
-            'stage', 
-        ],
-        where :{
-            projectId:projectId
-        },
-        
-    })
-    const stage = await Stage.findAll({ 
-        attributes:[
-            'sub_stage'
-        ],
-        where :{  
-            id:process[0].stage[currentStageInt-1]
-        },
-    })
 
-    if(currentSubStageInt+1 <= stage[0].sub_stage.length){
-        await Project.update({
-            currentSubStage:currentSubStageInt+1
-        },{
-            where:{
-                id: projectId
-            }
-        })
-        await Idea_wall.create({
-            type:"project",
-            projectId:projectId,
-            stage:`${currentStageInt}-${currentSubStageInt+1}`
-        })
-        .then(() =>{
-        return res.status(200).send({message: 'create success!'});
-        })
-        .catch(err => {
-            console.log(err);
-            return res.status(500).send({message: 'create failed!'});
-        })
-    }else if(currentStageInt === process[0].stage.length && currentSubStageInt === stage[0].sub_stage.length){
-        // if (currentStageInt === 5 && currentSubStageInt === 5) {
+        // 檢查並更新到下一階段
+        const process = await Process.findAll({
+            attributes: ['stage'],
+            where: { projectId: projectId }
+        });
+
+        const stage = await Stage.findAll({
+            attributes: ['sub_stage'],
+            where: { id: process[0].stage[currentStageInt - 1] }
+        });
+
+        if (currentSubStageInt + 1 <= stage[0].sub_stage.length) {
+            await Project.update({
+                currentSubStage: currentSubStageInt + 1
+            }, {
+                where: { id: projectId }
+            });
+
+            await Idea_wall.create({
+                type: "project",
+                projectId: projectId,
+                stage: `${currentStageInt}-${currentSubStageInt + 1}`
+            });
+
+            return res.status(200).send({ message: 'create success!' });
+        } else if (currentStageInt === process[0].stage.length && currentSubStageInt === stage[0].sub_stage.length) {
             await Project.update({
                 ProjectEnd: true
             }, {
-                where: {
-                    id: projectId
-                }
+                where: { id: projectId }
             });
-        // }
-        return res.status(200).send({message: 'done'});
-    }else{
-        await Project.update({
-            currentStage:currentStageInt+1,
-            currentSubStage:1
-        },{
-            where:{
-                id: projectId
-            }
-        });
-        await Idea_wall.create({
-            type:"project",
-            projectId:projectId,
-            stage:`${currentStageInt+1}-${currentSubStageInt}`
-        })
-        .then(() =>{
-        return res.status(200).send({message: 'create success!'});
-        })
-        .catch(err => {
-            console.log(err);
-            return res.status(500).send({message: 'create failed!'});
-        })
+            return res.status(200).send({ message: 'done' });
+        } else {
+            await Project.update({
+                currentStage: currentStageInt + 1,
+                currentSubStage: 1
+            }, {
+                where: { id: projectId }
+            });
+
+            await Idea_wall.create({
+                type: "project",
+                projectId: projectId,
+                stage: `${currentStageInt + 1}-${currentSubStageInt}`
+            });
+
+            return res.status(200).send({ message: 'create success!' });
+        }
+
+    } catch (err) {
+        console.error("createSubmit 錯誤:", err);
+        return res.status(500).send({ message: 'create failed!' });
     }
-}
+};
 
 exports.getAllSubmit = async(req, res) => {
     const { projectId } = req.query;

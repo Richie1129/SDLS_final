@@ -20,6 +20,7 @@ import IdeaWall from "./pages/ideaWall/IdeaWall";
 import NotFound from "./pages/notFound/NotFound";
 import Rag from './pages/Rag/Rag';
 import ManageStudent from './pages/manageStudent/ManageStudents';
+import OverView from './pages/manageStudent/OverView';
 
 export default function App() {
   const router = createBrowserRouter(
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="homepage" element={<HomePage />} />
           <Route path="bulletin" element={<Bulletin />} />
           <Route path="List" element={<List />} />
+          <Route path="overView" element={<OverView />} />
           <Route path="project/:projectId" element={<ProjectLayout />}>
             <Route path="kanban" element={<Kanban />} />
             <Route path="submitTask" element={<SubmitTask />} />
