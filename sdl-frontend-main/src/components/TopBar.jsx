@@ -6,6 +6,7 @@ import { AiOutlineDashboard } from "react-icons/ai"; // 引入專案總覽圖示
 import { LuLayoutDashboard } from "react-icons/lu";
 import { getProjectUser } from '../api/users';
 import { getProject } from '../api/project';
+import { getAnnouncements, createAnnouncement } from '../api/announcement';
 import { useQuery } from 'react-query';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { GrFormClose } from "react-icons/gr";
@@ -21,6 +22,40 @@ export default function TopBar() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedGroup, setSelectedGroup] = useState('all');
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null); // 用於存儲當前選中的公告
+
+  const handleAnnouncementClick = (announcement) => {
+      setSelectedAnnouncement(announcement); // 設置當前公告
+  };
+
+  // 關閉公告詳情模態框
+  const handleCloseAnnouncementModal = () => {
+      setSelectedAnnouncement(null);
+  };
+
+//   useEffect(() => {
+//     async function loadProjectUsers() {
+//         try {
+//             console.log("正在載入專案組別，projectId:", projectId);
+//             const response = await getProjectUser(projectId); // 調用 API
+//             if (!response || !response.user) {
+//                 throw new Error("API 回應格式不正確，無法獲取組別數據");
+//             }
+//             console.log("成功獲取組別數據:", response.user);
+//             const filteredUsers = response.user.filter(user => user.role === "student");
+//             setProjectUsers(filteredUsers);
+//         } catch (error) {
+//             console.error("無法獲取組別清單:", error);
+//             setProjectUsers([]); // 發生錯誤時設為空
+//         }
+//     }
+
+//     if (projectId) {
+//         loadProjectUsers(); // 當 projectId 存在時執行
+//     }
+// }, [projectId]);
+
   const [notifications, setNotifications] = useState([
     { id: 1, title: '新通知1', description: '這是第一則通知的簡單描述。', isRead: false },
     { id: 2, title: '新通知2', description: '這是第二則通知的簡單描述。', isRead: true },
@@ -84,16 +119,83 @@ export default function TopBar() {
     setNewNotificationModalOpen(true);
   };
 
-  const handleSaveNotification = (newTitle, newDescription) => {
-    const newNotification = {
-      id: notifications.length + 1,
-      title: newTitle,
-      description: newDescription,
-      isRead: false,
+  // 發佈公告
+  const handleSaveNotification = async (newTitle, newDescription) => {
+    const payload = {
+        title: newTitle,
+        content: newDescription,
+        author: localStorage.getItem('username') || "Unknown Author",
+        projectId: selectedGroup || 'all',
     };
-    setNotifications([...notifications, newNotification]);
-    setNewNotificationModalOpen(false);
-  };
+
+    try {
+        console.log("即將發送的公告數據:", payload);
+        const newAnnouncement = await createAnnouncement(payload);
+        setNotifications((prev) => [...prev, newAnnouncement]);
+        setNewNotificationModalOpen(false);
+    } catch (error) {
+        console.error("公告發佈失敗:", error);
+        Swal.fire({
+            title: "公告發佈失敗",
+            text: error.response?.data?.message || error.message || "請稍後再試",
+            icon: "error",
+        });
+    }
+};
+
+
+useEffect(() => {
+  if (projectId) {
+      console.log(`加入房間: ${projectId}`);
+      socket.emit('join_project', projectId); // 加入專案房間
+
+      socket.on('receiveAnnouncement', (data) => {
+          console.log("收到公告:", data);
+          setNotifications((prev) => [...prev, data]);
+      });
+
+      return () => {
+          console.log(`離開房間: ${projectId}`);
+          socket.off('receiveAnnouncement'); // 清除事件監聽
+      };
+  }
+}, [projectId]);
+
+
+// 載入公告列表
+useEffect(() => {
+  async function fetchAnnouncements() {
+      try {
+          console.log("正在載入公告列表...");
+          const announcements = await getAnnouncements();
+          console.log("公告列表載入成功:", announcements);
+          setNotifications(announcements); // 更新公告狀態
+      } catch (error) {
+          console.error("公告載入失敗:", error);
+      }
+  }
+
+  fetchAnnouncements();
+}, []); // 移除 projectId 的依賴
+
+// useEffect(() => {
+//   async function fetchAnnouncements() {
+//       try {
+//           console.log("正在載入公告列表，projectId:", projectId);
+//           const announcements = await getAnnouncements(projectId || 'all');
+//           console.log("公告列表載入成功:", announcements);
+//           setNotifications(announcements);
+//       } catch (error) {
+//           console.error("公告載入失敗:", error);
+//       }
+//   }
+
+//   if (projectId) {
+//       fetchAnnouncements();
+//   } else {
+//       console.warn("未提供有效的 projectId，無法載入公告列表。");
+//   }
+// }, [projectId]);
 
   if (location.pathname === "/homepage") {
     return (
@@ -120,21 +222,19 @@ export default function TopBar() {
                 <div className="p-4">
                   <h3 className="text-lg font-semibold mb-2">通知</h3>
                   <div className="max-h-60 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="flex items-center mb-2 p-2 border-b cursor-pointer"
-                        onClick={() => handleNotificationClick(notification.id)}
-                      >
-                        {!notification.isRead && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                        )}
-                        <div className="flex-1">
-                          <h4 className="text-sm font-bold">{notification.title}</h4>
-                          <p className="text-xs text-gray-500">{notification.description}</p>
-                        </div>
-                      </div>
-                    ))}
+                  {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                          <div 
+                              key={`${notification.id}-${index}`} // 為重複的 id 添加索引作為補充
+                              className="flex items-center mb-2 p-2 border-b cursor-pointer"
+                          >
+                              <h4 className="text-sm font-bold">{notification.title}</h4>
+                              <p className="text-xs text-gray-500 truncate">{notification.content}</p>
+                          </div>
+                      ))
+                  ) : (
+                      <p className="text-gray-500">目前沒有任何公告。</p>
+                  )}
                   </div>
                   {/* 老師角色顯示新增公告按鈕 */}
                   {role === "teacher" && (
@@ -208,10 +308,31 @@ export default function TopBar() {
           登出
         </button>
       </div>
+      {/* 新增公告 Modal */}
       <Modal open={newNotificationModalOpen} onClose={() => setNewNotificationModalOpen(false)}>
         <div className="p-6 bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
           <h3 className="text-2xl font-semibold mb-6 text-center">新增公告</h3>
           <form>
+            {/* 選擇組別 */}
+            <div className="mb-4">
+              <label htmlFor="groupSelect" className="block text-sm font-medium text-gray-700 mb-1">
+                選擇組別
+              </label>
+              <select
+                id="groupSelect"
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg"
+              >
+                <option value="all">全部組別</option>
+                {projectUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* 標題輸入 */}
             <div className="mb-4">
               <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">
@@ -224,6 +345,7 @@ export default function TopBar() {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               />
             </div>
+
             {/* 內容輸入 */}
             <div className="mb-4">
               <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">
@@ -236,6 +358,7 @@ export default function TopBar() {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               ></textarea>
             </div>
+
             {/* 發佈按鈕 */}
             <div className="flex justify-between">
               <button

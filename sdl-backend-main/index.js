@@ -22,6 +22,7 @@ const Chatroom_message = require('./models/chatroom_message');
 const Rag_message = require('./models/rag_message')
 const Project = require('./models/project')
 const QuestionMessage = require('./models/question_message')
+const Announcement = require('./models/announcement');
 
 const { rm } = require('fs');
 
@@ -40,7 +41,7 @@ app.use(cors({
 }));
 
 app.options('*', cors()); // 處理所有路由的預檢請求
-
+app.set('io', io); // 確保在 socket.io 初始化後掛載
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 // 靜態資源服務
@@ -481,6 +482,32 @@ io.on("connection", (socket) => {
 
 
     })
+    // 廣播公告
+    socket.on("emitAnnouncement", async (data) => {
+        console.log("收到公告廣播請求:", data);
+        const { title, content, author, projectId } = data;
+
+        try {
+            // 儲存公告至資料庫
+            const newAnnouncement = await Announcement.create({
+                title,
+                content,
+                author,
+                projectId: projectId === 'all' ? null : projectId,
+            });
+
+            console.log("公告已成功儲存並廣播:", newAnnouncement);
+
+            // 廣播到所有用戶或特定房間
+            if (projectId === 'all' || !projectId) {
+                io.emit("receiveAnnouncement", newAnnouncement);
+            } else {
+                io.to(projectId.toString()).emit("receiveAnnouncement", newAnnouncement);
+            }
+        } catch (error) {
+            console.error("公告儲存或廣播失敗:", error.message);
+        }
+    });
 
     socket.on("disconnect", () => {
         console.log(`${socket.id} a user disconnected`)
@@ -519,6 +546,7 @@ app.use('/submit', require('./routes/submit'))
 app.use('/stage', require('./routes/stage'))
 app.use('/chatroom', require('./routes/chatroom'))
 app.use('/question', require('./routes/question'))
+app.use('/announcements', require('./routes/announcement'));
 
 //error handling
 app.use((error, req, res, next) => {
