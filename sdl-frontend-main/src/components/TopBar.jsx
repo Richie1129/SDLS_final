@@ -24,6 +24,7 @@ export default function TopBar() {
   const location = useLocation();
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null); // 用於存儲當前選中的公告
+  const [projectList, setProjectList] = useState([]);
 
   const handleAnnouncementClick = (announcement) => {
       setSelectedAnnouncement(announcement); // 設置當前公告
@@ -34,33 +35,7 @@ export default function TopBar() {
       setSelectedAnnouncement(null);
   };
 
-//   useEffect(() => {
-//     async function loadProjectUsers() {
-//         try {
-//             console.log("正在載入專案組別，projectId:", projectId);
-//             const response = await getProjectUser(projectId); // 調用 API
-//             if (!response || !response.user) {
-//                 throw new Error("API 回應格式不正確，無法獲取組別數據");
-//             }
-//             console.log("成功獲取組別數據:", response.user);
-//             const filteredUsers = response.user.filter(user => user.role === "student");
-//             setProjectUsers(filteredUsers);
-//         } catch (error) {
-//             console.error("無法獲取組別清單:", error);
-//             setProjectUsers([]); // 發生錯誤時設為空
-//         }
-//     }
-
-//     if (projectId) {
-//         loadProjectUsers(); // 當 projectId 存在時執行
-//     }
-// }, [projectId]);
-
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: '新通知1', description: '這是第一則通知的簡單描述。', isRead: false },
-    { id: 2, title: '新通知2', description: '這是第二則通知的簡單描述。', isRead: true },
-    { id: 3, title: '新通知3', description: '這是第三則通知的簡單描述。', isRead: false },
-  ]);
+  const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [newNotificationModalOpen, setNewNotificationModalOpen] = useState(false); // 控制新增公告的 Modal
 
@@ -74,7 +49,8 @@ export default function TopBar() {
 
   const getProjectQuery = useQuery("getProject", () => getProject(projectId), {
     onSuccess: (data) => {
-      setProjectInfo(data);
+      setProjectInfo(data);// 保存當前專案資訊
+      setProjectList([data]); // 填充 projectList，只包含當前專案
       localStorage.setItem('currentStage', data.currentStage);
       localStorage.setItem('currentSubStage', data.currentSubStage);
       setCurrentStageIndex(data.currentStage);
@@ -143,7 +119,6 @@ export default function TopBar() {
     }
 };
 
-
 useEffect(() => {
   if (projectId) {
       console.log(`加入房間: ${projectId}`);
@@ -161,7 +136,6 @@ useEffect(() => {
   }
 }, [projectId]);
 
-
 // 載入公告列表
 useEffect(() => {
   async function fetchAnnouncements() {
@@ -177,25 +151,6 @@ useEffect(() => {
 
   fetchAnnouncements();
 }, []); // 移除 projectId 的依賴
-
-// useEffect(() => {
-//   async function fetchAnnouncements() {
-//       try {
-//           console.log("正在載入公告列表，projectId:", projectId);
-//           const announcements = await getAnnouncements(projectId || 'all');
-//           console.log("公告列表載入成功:", announcements);
-//           setNotifications(announcements);
-//       } catch (error) {
-//           console.error("公告載入失敗:", error);
-//       }
-//   }
-
-//   if (projectId) {
-//       fetchAnnouncements();
-//   } else {
-//       console.warn("未提供有效的 projectId，無法載入公告列表。");
-//   }
-// }, [projectId]);
 
   if (location.pathname === "/homepage") {
     return (
@@ -223,13 +178,14 @@ useEffect(() => {
                   <h3 className="text-lg font-semibold mb-2">通知</h3>
                   <div className="max-h-60 overflow-y-auto">
                   {notifications.length > 0 ? (
-                      notifications.map((notification) => (
+                      notifications.map((notification, index) => (
                           <div 
                               key={`${notification.id}-${index}`} // 為重複的 id 添加索引作為補充
                               className="flex items-center mb-2 p-2 border-b cursor-pointer"
+                              onClick={() => setSelectedAnnouncement(notification)} // 點擊後設置選中的公告
                           >
                               <h4 className="text-sm font-bold">{notification.title}</h4>
-                              <p className="text-xs text-gray-500 truncate">{notification.content}</p>
+                              <p className="text-xs text-gray-500 truncate">{notification.content || "沒有內容"}</p>
                           </div>
                       ))
                   ) : (
@@ -239,8 +195,11 @@ useEffect(() => {
                   {/* 老師角色顯示新增公告按鈕 */}
                   {role === "teacher" && (
                     <button
-                      className="w-full mt-2 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600"
-                      onClick={handleAddNotification}
+                      className="w-full mt-2 py-2 bg-[#5BA491] text-white text-sm font-semibold rounded-lg hover:bg-[#5BA491]"
+                      onClick={() => {
+                        console.log('新增公告按鈕被觸發');
+                        handleAddNotification();
+                      }}
                     >
                       + 新公告
                     </button>
@@ -259,61 +218,90 @@ useEffect(() => {
 
   return (
     <div className="fixed z-40 h-16 w-full bg-[#FFFFFF] flex items-center justify-between pr-5 border-b-2">
+      {/* 左側 LOGO 與專案名稱 */}
       <div className="flex items-center">
         <Link to="/homepage" className="flex px-5 items-center font-bold font-Mulish text-2xl">
           <img src="/SDLS_LOGOO.jpg" alt="Logo" className="h-14 w-auto" />
         </Link>
-        <p className="font-bold text-xl text-teal-900">{projectInfo.name}</p>
+        <p className="font-bold text-xl text-teal-900">{projectInfo.name || "專案名稱"}</p>
       </div>
+
+      {/* 右側功能 */}
       <div className="flex items-center">
         <h3 className="font-bold cursor-pointer p-1 mr-2 rounded-lg mx-3">
           {localStorage.getItem("username")}
         </h3>
-        <div className="relative">
-          <TbBell size={24} className="ml-2 cursor-pointer" onClick={() => setShowNotifications(!showNotifications)} />
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2">通知</h3>
-                <div className="max-h-60 overflow-y-auto">
-                  {notifications.map((notification) => (
+        <TbBell
+          size={24}
+          className="ml-2 cursor-pointer"
+          onClick={() => setShowNotifications(!showNotifications)}
+        />
+        {showNotifications && (
+          <div
+            style={{
+              position: "absolute",
+              right: "10px",
+              top: "50px",
+              width: "300px",
+              background: "#fff",
+              borderRadius: "8px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+              overflow: "hidden",
+            }}
+          >
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-2">通知</h3>
+              <div className="max-h-60 overflow-y-auto">
+                {notifications.length > 0 ? (
+                  notifications.map((notification, index) => (
                     <div
-                      key={notification.id}
+                      key={`${notification.id}-${index}`}
                       className="flex items-center mb-2 p-2 border-b cursor-pointer"
-                      onClick={() => handleNotificationClick(notification.id)}
+                      onClick={() => setSelectedAnnouncement(notification)}
                     >
                       {!notification.isRead && (
                         <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                       )}
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold">{notification.title}</h4>
-                        <p className="text-xs text-gray-500">{notification.description}</p>
-                      </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold">{notification.title}</h4>
+                      <p className="text-xs text-gray-500 truncate">{notification.content || "沒有內容"}</p>
                     </div>
-                  ))}
-                </div>
-                {role === "teacher" && (
-                  <button
-                    className="w-full mt-2 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600"
-                    onClick={handleAddNotification}
-                  >
-                    + 新公告
-                  </button>
+                  </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">目前沒有任何公告。</p>
                 )}
               </div>
+              {role === "teacher" && (
+                <button
+                  className="w-full mt-2 py-2 bg-[#5BA491] text-white text-sm font-semibold rounded-lg hover:bg-[#5BA491]"
+                  onClick={() => {
+                    console.log('新增公告按鈕被觸發');
+                    handleAddNotification();
+                  }}
+                >
+                  + 新公告
+                </button>
+              )}
             </div>
-          )}
-        </div>
-        <button onClick={handleLogout} className="ml-3 bg-gray-100 text-gray-900 hover:bg-gray-200 rounded-md p-2 font-semibold">
+          </div>
+        )}
+        <button
+          className="ml-3 bg-gray-100 text-gray-900 hover:bg-gray-200 rounded-md p-2 font-semibold"
+          onClick={() => {
+            localStorage.clear();
+            navigate("/");
+          }}
+        >
           登出
         </button>
       </div>
+
       {/* 新增公告 Modal */}
       <Modal open={newNotificationModalOpen} onClose={() => setNewNotificationModalOpen(false)}>
         <div className="p-6 bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
           <h3 className="text-2xl font-semibold mb-6 text-center">新增公告</h3>
           <form>
-            {/* 選擇組別 */}
             <div className="mb-4">
               <label htmlFor="groupSelect" className="block text-sm font-medium text-gray-700 mb-1">
                 選擇組別
@@ -325,15 +313,13 @@ useEffect(() => {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               >
                 <option value="all">全部組別</option>
-                {projectUsers.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.username}
+                {projectList.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
                   </option>
                 ))}
               </select>
             </div>
-
-            {/* 標題輸入 */}
             <div className="mb-4">
               <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">
                 標題
@@ -345,8 +331,6 @@ useEffect(() => {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               />
             </div>
-
-            {/* 內容輸入 */}
             <div className="mb-4">
               <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">
                 內容
@@ -358,8 +342,6 @@ useEffect(() => {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               ></textarea>
             </div>
-
-            {/* 發佈按鈕 */}
             <div className="flex justify-between">
               <button
                 type="button"
@@ -370,7 +352,7 @@ useEffect(() => {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="px-4 py-2 bg-[#5BA491] text-white rounded-lg hover:bg-[#5BA491]"
                 onClick={() => {
                   const newTitle = document.getElementById("newTitle").value;
                   const newDescription = document.getElementById("newDescription").value;
@@ -383,6 +365,24 @@ useEffect(() => {
           </form>
         </div>
       </Modal>
+
+      {/* 公告詳情 Modal */}
+      {selectedAnnouncement && (
+        <Modal open={true} onClose={() => setSelectedAnnouncement(null)}>
+          <div className="p-6 bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
+            <h3 className="text-2xl font-semibold mb-4">{selectedAnnouncement.title}</h3>
+            <p className="text-gray-700 mb-4">{selectedAnnouncement.content}</p>
+            <div className="text-right">
+              <button
+                className="px-4 py-2 bg-[#5BA491] text-white rounded-lg hover:bg-[#5BA491]"
+                onClick={() => setSelectedAnnouncement(null)}
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
