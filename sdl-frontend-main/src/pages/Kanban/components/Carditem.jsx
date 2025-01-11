@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../../components/Modal';
 import AssignMember from './AssignMember';
 import { getProjectUser } from '../../../api/users';
@@ -12,11 +12,13 @@ import { Draggable } from 'react-beautiful-dnd';
 import { socket } from '../../../utils/socket';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
+import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
+
 
 function Carditem({ data, index, columnIndex }) {
   const [open, setOpen] = useState(false);
   const [assignMemberModalopen, setAssignMemberModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null); // 用於模態框顯示圖片
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const { projectId } = useParams();
   const [cardData, setCardData] = useState({
     id: "",
@@ -28,7 +30,21 @@ function Carditem({ data, index, columnIndex }) {
     images: [],
     files: []
   });
+  const fileInputRef = useRef(null);
 
+  const openImageModal = (index) => {
+    setSelectedImageIndex(index);
+  };
+  const nextImage = () => {
+    setSelectedImageIndex((prev) => 
+      prev === cardData.images.length - 1 ? 0 : prev + 1
+    );
+  };
+  const prevImage = () => {
+    setSelectedImageIndex((prev) => 
+      prev === 0 ? cardData.images.length - 1 : prev - 1
+    );
+  };
   const personImg = [
     '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
     '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
@@ -60,18 +76,26 @@ function Carditem({ data, index, columnIndex }) {
 
     try {
       const response = await axios.post('http://localhost:3000/api/upload', formData, {
-        headers: {
+          headers: {
           'Content-Type': 'multipart/form-data',
-        },
+          },
       });
 
-      const uploadedFiles = response.data.files.filter(file => !file.mimeType.startsWith('image/'));
-      const uploadedImages = response.data.files.filter(file => file.mimeType.startsWith('image/'));
+      const uploadedFiles = response.data.files.filter(
+        (file) => !file.mimeType.startsWith("image/")
+      );
+      const uploadedImages = response.data.files
+        .filter((file) => file.mimeType.startsWith("image/"))
+        .map((file) => `http://localhost:3000${file.url}`);
 
       setCardData((prev) => ({
         ...prev,
-        files: Array.isArray(prev.files) ? [...prev.files, ...uploadedFiles] : [...uploadedFiles],
-        images: Array.isArray(prev.images) ? [...prev.images, ...uploadedImages.map(file => file.url)] : [...uploadedImages.map(file => file.url)],
+        files: Array.isArray(prev.files)
+          ? [...prev.files, ...uploadedFiles]
+          : [...uploadedFiles],
+        images: Array.isArray(prev.images)
+          ? [...prev.images, ...uploadedImages]
+          : uploadedImages,
       }));
 
       toast.success('檔案上傳成功');
@@ -95,6 +119,9 @@ function Carditem({ data, index, columnIndex }) {
       newImages.splice(index, 1);
       return { ...prev, images: newImages };
     });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const cardHandleSubmit = () => {
@@ -146,15 +173,21 @@ function Carditem({ data, index, columnIndex }) {
             className={`item-container p-2 rounded-lg mb-2 w-full shadow-lg hover:skew-y-2 ${snapshot.isDragging ? "dragging bg-customgreen/90 text-white" : "bg-white"}`}
           >
             {cardData.images && cardData.images.length > 0 && (
-                <div className="relative">
-                    <img
-                        src={`http://localhost:3000${cardData.images[0]}`} // 確保路徑完整
-                        alt="Card Background"
-                        className="w-full h-32 object-cover rounded-t-lg cursor-pointer"
-                        onClick={() => setSelectedImage(`http://localhost:3000${cardData.images[0]}`)}
-                    />
-                </div>
+              <div className="relative">
+                <img
+                  src={`${cardData.images[0]}`} // 確保路徑完整
+                  alt="Card Background"
+                  className="w-full h-32 object-cover rounded-t-lg cursor-pointer"
+                  onClick={() => openImageModal(0)}  
+                  />
+              </div>
             )}
+             {cardData.images.length > 1 && (
+              <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                +{cardData.images.length - 1}
+              </div>
+            )}
+            
 
             <div className="p-2">
               <div className="flex justify-between">
@@ -187,9 +220,61 @@ function Carditem({ data, index, columnIndex }) {
       </Draggable>
 
       {/* 模態框顯示圖片大圖 */}
-      {selectedImage && (
-        <Modal open={!!selectedImage} onClose={() => setSelectedImage(null)}>
-          <img src={selectedImage} alt="Selected" className="w-full h-auto" />
+      {selectedImageIndex !== null && (
+        <Modal 
+          open={true} 
+          onClose={() => setSelectedImageIndex(null)}
+          position="justify-center items-center"
+        >
+          <button onClick={() => setSelectedImageIndex(null)} className='absolute top-2 right-2 p-1 rounded-lg bg-white hover:bg-slate-200 z-10'>
+            <GrFormClose className="w-6 h-6" />
+          </button>
+
+          <div className="relative max-w-4xl w-full">
+            <img 
+              src={cardData.images[selectedImageIndex]} 
+              alt="Selected" 
+              className="w-full h-auto"
+            />
+            
+            {cardData.images.length > 1 && (
+              <>
+                
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
+                >
+                  <CaretCircleLeft size={24}/>
+                </button>
+                
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
+                >
+                  <CaretCircleRight size={24}/>
+                </button>
+                
+                
+                <div className="flex justify-center gap-2 mt-4">
+                  {cardData.images.map((image, index) => (
+                    <div 
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`w-16 h-16 cursor-pointer ${
+                        index === selectedImageIndex ? 'ring-2 ring-customgreen' : ''
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </Modal>
       )}
 
@@ -224,7 +309,12 @@ function Carditem({ data, index, columnIndex }) {
               </button>
               <div className="mt-3">
                 <label className="block font-bold mb-1">上傳檔案：</label>
-                <input type="file" multiple onChange={handleFileUpload} />
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  ref={fileInputRef}
+                />
               </div>
             </div>
           </div>
@@ -243,24 +333,24 @@ function Carditem({ data, index, columnIndex }) {
             ))}
           </div>
           <p className="flex justify-start items-center w-full h-7 m-1 font-bold text-sm sm:text-base text-black/60">
-        指派成員
-      </p>
+            指派成員
+          </p>
       <div className='flex flex-row'>
         {
           cardData.assignees &&
-          cardData.assignees.map((assignee, index) => {
-            const imgIndex = parseInt(assignee.id) % 9;
-            const userImg = personImg[imgIndex];
-            return (
+              cardData.assignees.map((assignee, index) => {
+                const imgIndex = parseInt(assignee.id) % 9;
+                const userImg = personImg[imgIndex];
+                return (
               <Tooltip key={index} children={""} content={`${assignee.username}`}>
-                <div className="relative w-8 h-8 rounded-full shadow-xl">
+                    <div className="relative w-8 h-8 rounded-full shadow-xl">
                   <img src={userImg} alt="Person" className="w-8 h-8 overflow-hidden rounded-full shadow-xl object-cover" />
-                </div>
-              </Tooltip>
+                    </div>
+                  </Tooltip>
             )
           })
         }
-      </div>
+          </div>
 
           <div className='flex justify-between mt-2'>
             <button

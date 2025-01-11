@@ -22,7 +22,12 @@ const Task = sequelize.define('task', {
     image: {
         type: DataTypes.BLOB, // 使用 BLOB 儲存圖片二進制數據
         allowNull: true,
-    }, 
+    },
+    images: {
+        type: DataTypes.ARRAY(DataTypes.TEXT),
+        defaultValue: [],
+        allowNull: true,
+    },
 });
 
 Task.belongsToMany(Tag, {through:"Card_Tag"});
