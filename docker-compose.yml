@@ -15,6 +15,9 @@ services:
       - "D:/SDLs_fullStack/sdl-backend-main/daily_file:/app/daily_file"  # 使用絕對路徑
     networks:
       - agent_network
+    depends_on:
+      postgres:
+        condition: service_healthy
   front:
     build:
       context: ./sdl-frontend-main
@@ -34,9 +37,15 @@ services:
       - "5432:5432"
     networks:
       - agent_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   pgadmin:
     image: dpage/pgadmin4
-    restart: unless-stopped 
+    restart: unless-stopped
     environment:
       - PGADMIN_DEFAULT_EMAIL=wulab@gmail.com
       - PGADMIN_DEFAULT_PASSWORD=ytwu35415
