@@ -5,7 +5,7 @@ import { TbBell } from "react-icons/tb"; // 引入鈴鐺圖示
 import { AiOutlineDashboard } from "react-icons/ai"; // 引入專案總覽圖示(原)
 import { LuLayoutDashboard } from "react-icons/lu";
 import { getProjectUser } from '../api/users';
-import { getProject } from '../api/project';
+import { getProject, getProjectsByMentor } from '../api/project';
 import { getAnnouncements, createAnnouncement } from '../api/announcement';
 import { useQuery } from 'react-query';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
@@ -25,6 +25,7 @@ export default function TopBar() {
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null); // 用於存儲當前選中的公告
   const [projectList, setProjectList] = useState([]);
+  const userName = localStorage.getItem('username');
 
   const handleAnnouncementClick = (announcement) => {
       setSelectedAnnouncement(announcement); // 設置當前公告
@@ -47,18 +48,41 @@ export default function TopBar() {
     enabled: !!projectId,
   });
 
-  const getProjectQuery = useQuery("getProject", () => getProject(projectId), {
-    onSuccess: (data) => {
-      setProjectInfo(data);// 保存當前專案資訊
-      setProjectList([data]); // 填充 projectList，只包含當前專案
-      localStorage.setItem('currentStage', data.currentStage);
-      localStorage.setItem('currentSubStage', data.currentSubStage);
-      setCurrentStageIndex(data.currentStage);
-      setCurrentSubStageIndex(data.currentSubStage);
-    },
-    enabled: !!projectId,
-  });
-
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        let projectData = null;
+  
+        // 獲取單個專案資訊
+        if (projectId) {
+          projectData = await getProject(projectId);
+          setProjectInfo(projectData); // 保存當前專案資訊
+          localStorage.setItem("currentStage", projectData.currentStage);
+          localStorage.setItem("currentSubStage", projectData.currentSubStage);
+          setCurrentStageIndex(projectData.currentStage);
+          setCurrentSubStageIndex(projectData.currentSubStage);
+        }
+  
+        // 獲取指導老師的所有專案
+        const mentorProjects = await getProjectsByMentor(userName);
+  
+        // 合併專案列表
+        const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
+  
+        // 過濾唯一專案
+        const uniqueProjects = Array.from(
+          new Map(allProjects.map((project) => [project.id, project])).values()
+        );
+  
+        setProjectList(uniqueProjects);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
+    }
+  
+    fetchData();
+  }, [projectId, userName]); // 添加依賴
+  
   const cleanStage = () => {
     localStorage.removeItem('currentStage');
     localStorage.removeItem('currentSubStage');
@@ -212,6 +236,74 @@ useEffect(() => {
             登出
           </button>
         </div>
+        {/* 新增公告 Modal */}
+        <Modal open={newNotificationModalOpen} onClose={() => setNewNotificationModalOpen(false)}>
+          <div className="p-6 bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
+            <h3 className="text-2xl font-semibold mb-6 text-center">新增公告</h3>
+            <form>
+              <div className="mb-4">
+                <label htmlFor="groupSelect" className="block text-sm font-medium text-gray-700 mb-1">
+                  選擇組別
+                </label>
+                <select
+                  id="groupSelect"
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="all">全部組別</option>
+                  {projectList.map((project, index) => (
+                    <option key={`${project.id}-${index}`} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">
+                  標題
+                </label>
+                <input
+                  type="text"
+                  id="newTitle"
+                  placeholder="請輸入公告標題"
+                  className="w-full p-3 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">
+                  內容
+                </label>
+                <textarea
+                  id="newDescription"
+                  placeholder="請輸入公告內容"
+                  rows="4"
+                  className="w-full p-3 border border-gray-300 rounded-lg"
+                ></textarea>
+              </div>
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                  onClick={() => setNewNotificationModalOpen(false)}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-[#5BA491] text-white rounded-lg hover:bg-[#5BA491]"
+                  onClick={() => {
+                    const newTitle = document.getElementById("newTitle").value;
+                    const newDescription = document.getElementById("newDescription").value;
+                    handleSaveNotification(newTitle, newDescription);
+                  }}
+                >
+                  發佈
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
       </div>
     );
   }
@@ -313,8 +405,8 @@ useEffect(() => {
                 className="w-full p-3 border border-gray-300 rounded-lg"
               >
                 <option value="all">全部組別</option>
-                {projectList.map((project) => (
-                  <option key={project.id} value={project.id}>
+                {projectList.map((project, index) => (
+                  <option key={`${project.id}-${index}`} value={project.id}>
                     {project.name}
                   </option>
                 ))}
