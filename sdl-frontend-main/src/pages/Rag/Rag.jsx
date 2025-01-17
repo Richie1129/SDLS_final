@@ -118,29 +118,47 @@ const Rag = () => {
   
   //   fetchHistory(); // 執行函式
   // }, []);
+  const startNewConversation = () => {
+    const openingMessage =
+      "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+    setHistory([{ question: null, answer: openingMessage }]);
+    setQuestion("");
+  };
   
   return (
     <div className="flex h-screen">
       {/* 左側歷史紀錄 */}
-      <aside className="w-1/3 bg-gray-100 p-64 border-r">
-        {/* <h2 className="text-2xl font-bold mb-4 text-gray-700" >歷史紀錄</h2>
-        <div className="space-y-4">
+      <aside className="w-1/3 bg-gray-50 p-6 border-r flex flex-col">
+        {/* 標題 */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-gray-700" style={{ marginTop: "80px", marginBottom: "20px", marginLeft:"60px" }}>歷史紀錄</h2>
+        </div>
+
+        {/* 歷史紀錄清單 */}
+        <div className="flex-1 overflow-y-auto space-y-4" style={{ marginLeft: "50px" }}>
           {history.map((item, index) => (
-            <div
+            <button
               key={index}
-              className="p-4 bg-white shadow rounded-lg hover:bg-gray-200 cursor-pointer"
+              onClick={() => loadChatHistory(index)}
+              className="w-full text-left p-4 bg-white rounded-lg shadow-sm border hover:shadow-md hover:border-gray-300 transition"
             >
-              {item.question && (
-                <p className="text-gray-600 truncate">
-                  <strong>問題:</strong> {item.question}
-                </p>
-              )}
-              <p className="text-gray-600 truncate">
-                <strong>回答:</strong> {item.answer}
+              <p className="text-gray-800 font-medium">對話 {index + 1}</p>
+              <p className="text-gray-500 text-sm truncate">
+                {item.question || "(無提問)"}
               </p>
-            </div>
+            </button>
           ))}
-        </div> */}
+        </div>
+
+        {/* 開始新對話按鈕 */}
+        <div className="mt-4">
+          <button
+            onClick={startNewConversation}
+            className="w-2/3 py-3 px-6 bg-[#5BA491] text-white rounded-lg shadow-md hover:bg-[#4a9076] transition" style={{ marginLeft: "120px", marginTop: "40px" }}
+          >
+            開始新對話
+          </button>
+        </div>
       </aside>
 
       {/* 右側聊天室 */}

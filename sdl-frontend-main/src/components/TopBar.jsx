@@ -80,54 +80,11 @@ export default function TopBar() {
   
   //   fetchData();
   // }, [projectId, userName]);
-
-// useEffect(() => {
-//     async function fetchData() {
-//       try {
-//         let projectData = null;
-
-//         console.log("正在以 projectId 獲取資料:", projectId);
-
-//         // 獲取單個專案資訊
-//         if (projectId) {
-//           projectData = await getProject(projectId);
-//           console.log("已獲取單一專案資料:", projectData);
-
-//           setProjectInfo(projectData); // 保存當前專案資訊
-//           localStorage.setItem("currentStage", projectData.currentStage);
-//           localStorage.setItem("currentSubStage", projectData.currentSubStage);
-//           setCurrentStageIndex(projectData.currentStage);
-//           setCurrentSubStageIndex(projectData.currentSubStage);
-//         }
-
-//         // 獲取指導老師的所有專案
-//         console.log("正在以使用者名稱獲取指導老師的專案:", userName);
-//         const mentorProjects = await getProjectsByMentor(userName);
-//         console.log("已獲取指導老師的專案:", mentorProjects);
-
-//         // 合併專案列表
-//         const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
-//         console.log("合併所有專案列表:", allProjects);
-
-//         // 過濾唯一專案
-//         const uniqueProjects = Array.from(
-//           new Map(allProjects.map((project) => [project.id, project])).values()
-//         );
-//         console.log("過濾後的唯一專案列表:", uniqueProjects);
-
-//         setProjectList(uniqueProjects);
-//       } catch (error) {
-//         console.error("獲取專案時發生錯誤:", error);
-//       }
-//     }
-
-//     fetchData();
-//   }, [projectId, userName]); // 添加依賴
-  
-  useEffect(() => {
+    useEffect(() => {
     async function fetchData() {
         try {
             let projectData = null;
+            if (!projectId) { return null }
 
             console.log("正在以 projectId 獲取資料:", projectId);
 
@@ -176,6 +133,60 @@ export default function TopBar() {
     fetchData();
 }, [projectId]); // 添加依賴，只需要 projectId
 
+// useEffect(() => {
+//   async function fetchData() {
+//       try {
+//           let projectData = null;
+//           console.log("當前登入的使用者名稱:", userName);
+
+//           // 確保有有效的 userName
+//           if (!userName || userName === "未知指導老師") {
+//               console.warn("未提供有效的指導老師名稱，跳過 API 請求");
+//               return;
+//           }
+
+//           console.log("正在以 projectId 獲取資料:", projectId);
+
+//           // 獲取單個專案資訊
+//           if (projectId) {
+//               projectData = await getProject(projectId);
+//               console.log("已獲取單一專案資料:", projectData);
+
+//               if (projectData) {
+//                   // 保存專案資訊與進度
+//                   setProjectInfo(projectData);
+//                   localStorage.setItem("currentStage", projectData.currentStage);
+//                   localStorage.setItem("currentSubStage", projectData.currentSubStage);
+//                   setCurrentStageIndex(projectData.currentStage);
+//                   setCurrentSubStageIndex(projectData.currentSubStage);
+//               }
+//           }
+
+//           // 獲取特定指導老師的所有專案
+//           const mentorName = projectData ? projectData.mentor : userName;
+//           console.log("正在以指導老師名稱獲取專案:", mentorName);
+
+//           const mentorProjects = await getProjectsByMentor(mentorName);
+//           console.log("已獲取指導老師的專案:", mentorProjects);
+
+//           // 合併專案列表
+//           const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
+//           console.log("合併所有專案列表:", allProjects);
+
+//           // 過濾唯一專案
+//           const uniqueProjects = Array.from(
+//               new Map(allProjects.map((project) => [project.id, project])).values()
+//           );
+//           console.log("過濾後的唯一專案列表:", uniqueProjects);
+
+//           setProjectList(uniqueProjects);
+//       } catch (error) {
+//           console.error("獲取專案時發生錯誤:", error);
+//       }
+//   }
+
+//   fetchData();
+// }, [projectId, userName]); // 添加依賴 projectId 和 userName
   
   const cleanStage = () => {
     localStorage.removeItem('currentStage');
@@ -214,25 +225,39 @@ export default function TopBar() {
   };
 
   // 發佈公告
-  const handleSaveNotification = async (newTitle, newDescription) => {
+const handleSaveNotification = async (newTitle, newDescription) => {
+    if (!selectedGroup) {
+        Swal.fire({
+            title: '錯誤',
+            text: '請選擇一個組別後再發佈公告',
+            icon: 'warning',
+        });
+        return;
+    }
+
     const payload = {
         title: newTitle,
         content: newDescription,
-        author: localStorage.getItem('username') || "Unknown Author",
-        projectId: selectedGroup || 'all',
+        author: localStorage.getItem('username') || 'Unknown Author',
+        projectId: selectedGroup === 'all' ? null : selectedGroup, // 明確處理 "all" 與特定組別的對應
     };
 
     try {
-        console.log("即將發送的公告數據:", payload);
+        console.log('即將發送的公告數據:', payload);
         const newAnnouncement = await createAnnouncement(payload);
         setNotifications((prev) => [...prev, newAnnouncement]);
         setNewNotificationModalOpen(false);
-    } catch (error) {
-        console.error("公告發佈失敗:", error);
         Swal.fire({
-            title: "公告發佈失敗",
-            text: error.response?.data?.message || error.message || "請稍後再試",
-            icon: "error",
+            title: '成功',
+            text: '公告已成功發佈',
+            icon: 'success',
+        });
+    } catch (error) {
+        console.error('公告發佈失敗:', error);
+        Swal.fire({
+            title: '公告發佈失敗',
+            text: error.response?.data?.message || error.message || '請稍後再試',
+            icon: 'error',
         });
     }
 };
