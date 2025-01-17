@@ -26,6 +26,11 @@ export default function TopBar() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null); // 用於存儲當前選中的公告
   const [projectList, setProjectList] = useState([]);
   const userName = localStorage.getItem('username');
+  const personImg = [
+    '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
+    '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
+    '/public/person/woman1.png', '/public/person/woman2.png', '/public/person/woman3.png'
+  ];
 
   const handleAnnouncementClick = (announcement) => {
       setSelectedAnnouncement(announcement); // 設置當前公告
@@ -48,40 +53,129 @@ export default function TopBar() {
     enabled: !!projectId,
   });
 
+  // useEffect(() => {
+  //   async function fetchData() {
+  //     try {
+  //       let projectData = null;
+  
+  //       // 獲取單個專案資訊
+  //       if (projectId) {
+  //         projectData = await getProject(projectId);
+  //         setProjectInfo(projectData);
+  //       }
+  
+  //       // 獲取指導老師的所有專案
+  //       const mentorProjects = await getProjectsByMentor(userName);
+  
+  //       // 合併專案列表並過濾重複專案
+  //       const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
+  //       const uniqueProjects = Array.from(
+  //         new Map(allProjects.map((project) => [project.id, project])).values()
+  //       );
+  //       setProjectList(uniqueProjects);
+  //     } catch (error) {
+  //       console.error("Error fetching projects:", error);
+  //     }
+  //   }
+  
+  //   fetchData();
+  // }, [projectId, userName]);
+
+// useEffect(() => {
+//     async function fetchData() {
+//       try {
+//         let projectData = null;
+
+//         console.log("正在以 projectId 獲取資料:", projectId);
+
+//         // 獲取單個專案資訊
+//         if (projectId) {
+//           projectData = await getProject(projectId);
+//           console.log("已獲取單一專案資料:", projectData);
+
+//           setProjectInfo(projectData); // 保存當前專案資訊
+//           localStorage.setItem("currentStage", projectData.currentStage);
+//           localStorage.setItem("currentSubStage", projectData.currentSubStage);
+//           setCurrentStageIndex(projectData.currentStage);
+//           setCurrentSubStageIndex(projectData.currentSubStage);
+//         }
+
+//         // 獲取指導老師的所有專案
+//         console.log("正在以使用者名稱獲取指導老師的專案:", userName);
+//         const mentorProjects = await getProjectsByMentor(userName);
+//         console.log("已獲取指導老師的專案:", mentorProjects);
+
+//         // 合併專案列表
+//         const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
+//         console.log("合併所有專案列表:", allProjects);
+
+//         // 過濾唯一專案
+//         const uniqueProjects = Array.from(
+//           new Map(allProjects.map((project) => [project.id, project])).values()
+//         );
+//         console.log("過濾後的唯一專案列表:", uniqueProjects);
+
+//         setProjectList(uniqueProjects);
+//       } catch (error) {
+//         console.error("獲取專案時發生錯誤:", error);
+//       }
+//     }
+
+//     fetchData();
+//   }, [projectId, userName]); // 添加依賴
+  
   useEffect(() => {
     async function fetchData() {
-      try {
-        let projectData = null;
-  
-        // 獲取單個專案資訊
-        if (projectId) {
-          projectData = await getProject(projectId);
-          setProjectInfo(projectData); // 保存當前專案資訊
-          localStorage.setItem("currentStage", projectData.currentStage);
-          localStorage.setItem("currentSubStage", projectData.currentSubStage);
-          setCurrentStageIndex(projectData.currentStage);
-          setCurrentSubStageIndex(projectData.currentSubStage);
+        try {
+            let projectData = null;
+
+            console.log("正在以 projectId 獲取資料:", projectId);
+
+            // 獲取單個專案資訊
+            if (projectId) {
+                projectData = await getProject(projectId);
+                console.log("已獲取單一專案資料:", projectData);
+
+                // 確認 mentor 資訊
+                if (projectData.mentor) {
+                    console.log("此專案的指導老師是:", projectData.mentor);
+                } else {
+                    console.warn("此專案未提供指導老師資訊");
+                }
+
+                setProjectInfo(projectData); // 保存當前專案資訊
+                localStorage.setItem("currentStage", projectData.currentStage);
+                localStorage.setItem("currentSubStage", projectData.currentSubStage);
+                setCurrentStageIndex(projectData.currentStage);
+                setCurrentSubStageIndex(projectData.currentSubStage);
+            }
+
+            // 獲取特定指導老師的所有專案
+            const mentorName = projectData ? projectData.mentor : "未知指導老師";
+            console.log("正在以指導老師名稱獲取專案:", mentorName);
+
+            const mentorProjects = await getProjectsByMentor(mentorName);
+            console.log("已獲取指導老師的專案:", mentorProjects);
+
+            // 合併專案列表
+            const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
+            console.log("合併所有專案列表:", allProjects);
+
+            // 過濾唯一專案
+            const uniqueProjects = Array.from(
+                new Map(allProjects.map((project) => [project.id, project])).values()
+            );
+            console.log("過濾後的唯一專案列表:", uniqueProjects);
+
+            setProjectList(uniqueProjects);
+        } catch (error) {
+            console.error("獲取專案時發生錯誤:", error);
         }
-  
-        // 獲取指導老師的所有專案
-        const mentorProjects = await getProjectsByMentor(userName);
-  
-        // 合併專案列表
-        const allProjects = projectData ? [projectData, ...mentorProjects] : mentorProjects;
-  
-        // 過濾唯一專案
-        const uniqueProjects = Array.from(
-          new Map(allProjects.map((project) => [project.id, project])).values()
-        );
-  
-        setProjectList(uniqueProjects);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      }
     }
-  
+
     fetchData();
-  }, [projectId, userName]); // 添加依賴
+}, [projectId]); // 添加依賴，只需要 projectId
+
   
   const cleanStage = () => {
     localStorage.removeItem('currentStage');
@@ -175,6 +269,19 @@ useEffect(() => {
 
   fetchAnnouncements();
 }, []); // 移除 projectId 的依賴
+
+const Tooltip = ({ children, content }) => {
+  return (
+    <div className='relative group'>
+      {children}
+      <div className='absolute  hidden group-hover:block'>
+        <div className='bg-gray-700 text-white text-xs rounded-lg py-1 px-2 whitespace-nowrap'>
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
 
   if (location.pathname === "/homepage") {
     return (
@@ -310,16 +417,36 @@ useEffect(() => {
 
   return (
     <div className="fixed z-40 h-16 w-full bg-[#FFFFFF] flex items-center justify-between pr-5 border-b-2">
-      {/* 左側 LOGO 與專案名稱 */}
       <div className="flex items-center">
         <Link to="/homepage" className="flex px-5 items-center font-bold font-Mulish text-2xl">
           <img src="/SDLS_LOGOO.jpg" alt="Logo" className="h-14 w-auto" />
         </Link>
         <p className="font-bold text-xl text-teal-900">{projectInfo.name || "專案名稱"}</p>
       </div>
-
       {/* 右側功能 */}
       <div className="flex items-center">
+        <ul className="flex items-center justify-center space-x-1">
+          {getProjectUserQuery.isLoading || projectId === undefined ? <></> :
+            getProjectUserQuery.isError ? <p className='font-bold text-2xl'>Error</p> :
+              projectUsers.map((projectUser, index) => {
+                const imgIndex = parseInt(projectUser.id) % 9;
+                const userImg = personImg[imgIndex];
+                return (
+                  <Tooltip key={index} children={""} content={`${projectUser.username}`}>
+                    <li  className="relative w-8 h-8 rounded-full shadow-xl">
+                    <img src={userImg} alt="Person" className="w-full h-full object-cover" />
+                  </li>
+                  </Tooltip>
+                )
+              })
+          }
+          <li>
+            <button className="p-1 rounded-md text-gray-500 hover:text-gray-900 ">
+              <BsPlusCircleDotted size={32} onClick={() => setReferralCodeModalOpen(true)} />
+            </button>
+          </li>
+        </ul>
+        
         <h3 className="font-bold cursor-pointer p-1 mr-2 rounded-lg mx-3">
           {localStorage.getItem("username")}
         </h3>

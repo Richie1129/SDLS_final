@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { socket } from "../../utils/socket";
+import { getRagMessageHistory } from "../../api/rag";
 
 const API_URL = "https://140.115.126.193/api/v1/chats/bbce13e4caa311efa78e0242ac120005";
 const API_KEY = "ragflow-UzNzBjMTEyNzgyMjExZWZhM2MzMDI0Mm";
@@ -103,11 +104,26 @@ const Rag = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
 
+  // useEffect(() => {
+  //   // 測試 getRagMessageHistory 是否正常運作
+  //   const fetchHistory = async () => {
+  //     try {
+  //       const response = await getRagMessageHistory(); // 呼叫 API 函式
+  //       console.log("取得的歷史紀錄：", response); // 打印結果以確認
+  //       setHistory(response); // 將取得的歷史紀錄設定到狀態中
+  //     } catch (error) {
+  //       console.error("無法取得歷史紀錄：", error); // 錯誤處理
+  //     }
+  //   };
+  
+  //   fetchHistory(); // 執行函式
+  // }, []);
+  
   return (
     <div className="flex h-screen">
       {/* 左側歷史紀錄 */}
-      <aside className="w-1/3 bg-gray-100 p-4 border-r">
-        <h2 className="text-xl font-bold mb-4 text-gray-700">歷史紀錄</h2>
+      <aside className="w-1/3 bg-gray-100 p-64 border-r">
+        {/* <h2 className="text-2xl font-bold mb-4 text-gray-700" >歷史紀錄</h2>
         <div className="space-y-4">
           {history.map((item, index) => (
             <div
@@ -124,13 +140,13 @@ const Rag = () => {
               </p>
             </div>
           ))}
-        </div>
+        </div> */}
       </aside>
 
       {/* 右側聊天室 */}
       <main className="w-2/3 flex flex-col">
         <div className="flex-grow p-6" style={{ backgroundColor: "#F0F0F0" }}>
-          <h2 className="text-2xl font-bold mb-6 text-gray-700">聊天室</h2>
+        <h2 className="text-2xl font-bold text-gray-700" style={{ marginTop: "80px", marginBottom: "20px" }}>聊天室</h2>
           {history.map((item, index) => (
             <div key={index} className="space-y-4">
               {item.question && (
