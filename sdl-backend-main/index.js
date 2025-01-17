@@ -135,8 +135,6 @@ io.on("connection", (socket) => {
         // 將訊息發送到對應的房間
         socket.to(data.room).emit("receive_rag_message", data);
     });
-    
-    
     //create card
     socket.on("taskItemCreated", async (data) => {
         try {
@@ -547,6 +545,7 @@ app.use('/stage', require('./routes/stage'))
 app.use('/chatroom', require('./routes/chatroom'))
 app.use('/question', require('./routes/question'))
 app.use('/announcements', require('./routes/announcement'));
+// app.use('/rag_message', require('./routes/rag_message'));
 
 //error handling
 app.use((error, req, res, next) => {

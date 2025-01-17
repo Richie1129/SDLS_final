@@ -1,3 +1,4 @@
+// model for rag_message.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../util/database');
 
