@@ -80,6 +80,7 @@ export default function TopBar() {
   
   //   fetchData();
   // }, [projectId, userName]);
+  
     useEffect(() => {
     async function fetchData() {
         try {
@@ -540,6 +541,17 @@ const Tooltip = ({ children, content }) => {
           登出
         </button>
       </div>
+      <Modal open={referralCodeModalOpen} onClose={() => setReferralCodeModalOpen(false)} opacity={true} position={"justify-center items-center"}>
+        <button onClick={() => setReferralCodeModalOpen(false)} className=' absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
+          <GrFormClose className=' w-6 h-6' />
+        </button>
+        <div className='flex flex-col p-3'>
+          <h3 className=' font-bold text-base mb-3'>專案邀請碼:</h3>
+          <h3 className=' text-center font-bold text-lg py-1 bg-slate-200/70 rounded-md'>
+            {projectInfo.referral_code}
+          </h3>
+        </div>
+      </Modal>
 
       {/* 新增公告 Modal */}
       <Modal open={newNotificationModalOpen} onClose={() => setNewNotificationModalOpen(false)}>
