@@ -39,22 +39,22 @@ const AnimatedHamburgerButton = () => {
             >
                 <motion.span
                     variants={VARIANTS.top}
-                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 维持1单位的高度
+                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 維持1單位的高度
                     style={{ y: "-50%", left: "50%", x: "-50%", top: "25%" }}
                 />
                 <motion.span
                     variants={VARIANTS.middle}
-                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 维持1单位的高度
+                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 維持1单位的高度
                     style={{ left: "50%", x: "-50%", top: "50%", y: "-50%" }}
                 />
                 <motion.span
                     variants={VARIANTS.bottom}
-                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 维持1单位的高度
+                    className="absolute h-1 w-6 bg-zinc-800 rounded-full"  // 維持1单位的高度
                     style={{
                         x: "-50%",
                         y: "50%",
                         bottom: "25%",
-                        left: "50%",  // 将left修改为50%，确保与中间线条对齐
+                        left: "50%",  // 將left修改為50%，確保與中間線條對齊
                     }}
                 />
             </motion.button>
@@ -87,12 +87,12 @@ const VARIANTS = {
         open: {
             rotate: ["0deg", "0deg", "45deg"],
             bottom: ["25%", "50%", "50%"],
-            left: "50%",  // 在打开状态下对齐
+            left: "50%",  // 在打開狀態下對齊
         },
         closed: {
             rotate: ["45deg", "0deg", "0deg"],
             bottom: ["50%", "50%", "25%"],
-            left: "50%",  // 确保在关闭状态下与其他线条完美对齐
+            left: "50%",  // 確保在關閉狀態下與其他線條完美對齊
         },
     },
 };
@@ -108,33 +108,64 @@ export default function SideBar() {
     const { currentStageIndex, setCurrentStageIndex, currentSubStageIndex, setCurrentSubStageIndex } = useContext(Context)
     const role = localStorage.getItem("role"); // Get user role from localStorage
 
-    const menus = [
+    // const menus = [
+    //     { name: "進度看板", link: `/project/${projectId}/kanban`, icon: MdOutlineViewKanban },
+    //     { name: "想法延伸", link: `/project/${projectId}/ideaWall`, icon: FaRegLightbulb },
+    //     { name: "反思日誌", link: `/project/${projectId}/reflection`, icon: CgNotes },
+    //     // { name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask },
+    //     { name: "歷程檔案", link: `/project/${projectId}/protfolio`, icon: TiFolderOpen },
+    //     { name: "提問專區", link: `/project/${projectId}/askQuestion`, icon: TbMessageQuestion }
+    // ];
+
+    // if (role === "student") {
+    //     menus.push({ name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask });
+    // }
+    // if (role === "teacher") {
+    //     menus.push({ name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard });
+    // }
+
+    // if (role === "teacher") {
+    //     menus.push({ name: "學生管理", link: `/project/${projectId}/manageStudent`, icon: LuLayoutDashboard });
+    // }
+
+    // if (role === "student") {
+    //     menus.push({ name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion });
+    // }
+
+    const baseMenus = [
         { name: "進度看板", link: `/project/${projectId}/kanban`, icon: MdOutlineViewKanban },
         { name: "想法延伸", link: `/project/${projectId}/ideaWall`, icon: FaRegLightbulb },
-        { name: "反思日誌", link: `/project/${projectId}/reflection`, icon: CgNotes },
-        // { name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask },
+        { name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask }, // Student only
         { name: "歷程檔案", link: `/project/${projectId}/protfolio`, icon: TiFolderOpen },
-        { name: "提問專區", link: `/project/${projectId}/askQuestion`, icon: TbMessageQuestion }
+        { name: "反思日誌", link: `/project/${projectId}/reflection`, icon: CgNotes },
+        { name: "提問專區", link: `/project/${projectId}/askQuestion`, icon: TbMessageQuestion },
+        { name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion }, // Student only
+        { name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard }, // Teacher only
+        { name: "學生管理", link: `/project/${projectId}/manageStudent`, icon: LuLayoutDashboard }, // Teacher only
     ];
-
-    if (role === "student") {
-        menus.push({ name: "成果紀錄", link: `/project/${projectId}/submitTask`, icon: BiTask });
-    }
-    if (role === "teacher") {
-        menus.push({ name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard });
-    }
-
-    if (role === "teacher") {
-        menus.push({ name: "學生管理", link: `/project/${projectId}/manageStudent`, icon: LuLayoutDashboard });
-    }
-
-    if (role === "student") {
-        menus.push({ name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion });
-    }
+    
+    // 定義 Student 和 Teacher 的排序順序
+    const studentOrder = ["進度看板", "想法延伸", "成果紀錄", "歷程檔案", "反思日誌", "提問專區", "探究幫手"];
+    const teacherOrder = ["進度看板", "想法延伸", "歷程檔案", "反思日誌", "提問專區", "學習儀錶板", "學生管理"];
+    
+    // 根據 `role` 過濾 `menus`，並依照對應的順序排序
+    const menus = baseMenus
+        .filter(menu => (role === "student" ? studentOrder.includes(menu.name) : teacherOrder.includes(menu.name)))
+        .sort((a, b) => {
+            const order = role === "student" ? studentOrder : teacherOrder;
+            return order.indexOf(a.name) - order.indexOf(b.name);
+        });
 
     const [stageInfo, setStageInfo] = useState({ name: "", description: "" });
     const currentStage = localStorage.getItem("currentStage");
     const currentSubStage = localStorage.getItem("currentSubStage");
+
+    const [openStage, setOpenStage] = useState(null);
+
+    const toggleStage = (index) => {
+        setOpenStage(openStage === index ? null : index);
+    };
+
     // 定義階段名稱和它們對應的索引
     const stages = [
         { name: "定標", index: 1 },
@@ -143,24 +174,34 @@ export default function SideBar() {
         { name: "調節", index: 4 },
         { name: "歷程", index: 5 }
     ];
+    
+    // 定義對應的子階段
+    const subStages = {
+        1: ["提出研究主題", "提出研究目的", "提出研究問題"],
+        2: ["訂定研究構想表", "設計研究記錄表格", "規劃研究排程"],
+        3: ["進行嘗試性研究", "分析資料與繪圖", "撰寫研究成果"],
+        4: ["檢視研究進度", "進行研究討論", "撰寫研究結論"],
+        5: ["封面製作", "摘要撰寫", "目錄編制", "內容撰寫", "反思撰寫"]
+    };
+    
     const [selected, setSelected] = useState(0);
     
     const getStageColor = (stageIndex) => {
         if (parseInt(currentStageIndex) === stageIndex) {
-            return '#5BA491'; // 当前阶段
+            return '#5BA491'; // 當前階段
         } else if (stageIndex < parseInt(currentStageIndex)) {
-            return '#7C968F'; // 小于当前阶段的阶段
+            return '#7C968F'; // 小於當前階段的階段
         } else {
-            return '#BEBEBE'; // 其他阶段
+            return '#BEBEBE'; // 其他階段
         }
     };
     const getTextColor = (stageIndex) => {
         if (parseInt(currentStage) === stageIndex) {
-            return 'text-white'; // 当前阶段
+            return 'text-white'; // 當前階段
         } else if (stageIndex < parseInt(currentStage)) {
-            return 'text-slate-200'; // 小于当前阶段的阶段
+            return 'text-slate-200'; // 小於當前階段的階段
         } else {
-            return 'text-slate-700'; // 其他阶段
+            return 'text-slate-700'; // 其他階段
         }
     };
     useEffect(() => {
@@ -229,11 +270,28 @@ export default function SideBar() {
                                 projectId && (
                                     <div className={`mt-auto mb-4 transition-all duration-500 w-full overflow-hidden pt-4`}>
                                         <div className={`flex flex-col space-y-2`}>
-                                            {stages.map((stage) => (
-                                                <div key={stage.index} style={{ backgroundColor: `${getStageColor(stage.index)}` }} className={`h-8 w-full flex items-center justify-center ${getTextColor(stage.index)}`}>
-                                                    {<span className='text-sm font-bold'>{stage.name}</span>}
+                                        {stages.map((stage) => (
+                                            <div key={stage.index} className="w-full">
+                                                {/* 點擊展開/收起 */}
+                                                <div
+                                                    onClick={() => toggleStage(stage.index)}
+                                                    style={{ backgroundColor: `${getStageColor(stage.index)}` }}
+                                                    className={`h-8 w-full flex items-center justify-center cursor-pointer ${getTextColor(stage.index)}`}
+                                                >
+                                                    <span className="text-sm font-bold">{stage.name}</span>
+                                                    {/* <span className="ml-1">{openStage === stage.index ? "▲" : "▼"}</span> */}
                                                 </div>
-                                            ))}
+
+                                                {/* 展開的子階段 */}
+                                                {openStage === stage.index && (
+                                                    <div className="bg-gray-100 text-gray-900 text-sm rounded-md p-2 border border-gray-300 mt-1">
+                                                        {subStages[stage.index].map((sub, i) => (
+                                                            <div key={i} className="py-1 pl-4">{sub}</div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                         </div>
                                     </div>
                                 )
