@@ -18,6 +18,8 @@ const Daily_personal = sequelize.define('daily_personal', {
         type: DataTypes.TEXT,
         allowNull:true,
     }
+}, {
+    tableName: 'daily_personals' // 👈 加上這行
 });
 
 module.exports = Daily_personal;
