@@ -131,7 +131,7 @@ exports.getAllSubmit = async(req, res) => {
         res.status(200).json(submitsWithBase64);
     } catch (error) {
         console.error("Error in getAllSubmit:", error);
-        res.status(500).send({ message: '获取项目失败！' });
+        res.status(500).send({ message: '獲取項目失敗！' });
     }
 };
 

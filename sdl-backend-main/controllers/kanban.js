@@ -136,8 +136,6 @@ exports.getKanbanTask = async ( req, res ) =>{
             'owner',
             'assignees',
             'images',
-            'createdAt',
-            'updatedAt'
         ],
         where:{
             columnId : columnId

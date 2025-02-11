@@ -32,8 +32,6 @@ const Task = sequelize.define('task', {
         defaultValue: [],
         allowNull: true,
     },    
-}, {
-    timestamps: true // ✅ 確保啟用了 Sequelize 自動生成 `createdAt` 和 `updatedAt`
 });
 
 Task.belongsToMany(Tag, {through:"Card_Tag"});
