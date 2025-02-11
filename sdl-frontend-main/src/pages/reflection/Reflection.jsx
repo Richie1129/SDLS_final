@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
 import { GrFormClose } from "react-icons/gr";
 import { useParams } from 'react-router-dom';
-import { getAllPersonalDaily, createPersonalDaily, getAllTeamDaily, createTeamDaily } from '../../api/reflection';
+import { getAllPersonalDaily, createPersonalDaily, getAllTeamDaily, createTeamDaily, updatePersonalDaily, updateTeamDaily } from '../../api/reflection';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import toast, { Toaster } from 'react-hot-toast';
 import Loader from '../../components/Loader';
@@ -59,6 +59,7 @@ export default function Reflection() {
 
     // 編輯按鈕的處理邏輯
     const handleEditClick = (item) => {
+        console.log("編輯的日誌:", item); // 檢查這裡是否有正確的 `id`
         setTitle(item.title);
         setContent(item.content);
         setAttachFile(item.fileData);
@@ -166,6 +167,36 @@ export default function Reflection() {
         }
     })
 
+    const { mutate: updateDaily } = useMutation(({ id, ...data }) => updatePersonalDaily(id, data), {
+        onSuccess: () => {
+            queryClient.invalidateQueries("personalDaily");
+            sucesssNotify("更新成功");
+        },
+        onError: (error) => {
+            console.log(error);
+            errorNotify("更新失敗");
+        }
+    });
+    
+
+    const handleSaveEdit = () => {
+        if (!editingId) {
+            toast.error("未選擇日誌");
+            return;
+        }
+    
+        const updatedData = {
+            id: Number(editingId),  // 確保 id 是數字
+            title: title,
+            content: content
+        };
+    
+        console.log("更新資料:", updatedData); // 確保這裡有 `id`
+        updateDaily(updatedData); // 觸發 API 更新
+        setPersonalDailyModalOpen(false);
+    };
+    
+    
     const handleChange = e => {
         const { name, value } = e.target;
         setDailyData(prev => ({
@@ -544,13 +575,7 @@ export default function Reflection() {
                             className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2">
                             取消
                         </button>
-                        <button onClick={e => {
-
-                            handleCreatePersonalDaily(e);
-
-                        }}
-                            type="submit"
-                            className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
+                        <button onClick={handleSaveEdit} type="submit" className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
                             儲存
                         </button>
                     </div>

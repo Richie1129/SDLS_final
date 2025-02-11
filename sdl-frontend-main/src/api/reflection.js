@@ -22,9 +22,13 @@ export const createPersonalDaily = async (data) => {
 
 // 修改個人日報
 export const updatePersonalDaily = async (id, data) => {
-    const response = await dailyApi.put(`/${id}`, data);
+    console.log(`發送請求: PUT http://localhost:3000/daily/${id}`, data);
+    const response = await dailyApi.put(`/${id}`, data, {
+        headers: { "Content-Type": "application/json" }, // 確保是 JSON
+    });
     return response.data;
-}
+};
+
 
 // 取得所有團隊日報
 export const getAllTeamDaily = async (config) => {

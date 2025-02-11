@@ -150,3 +150,27 @@ exports.createTeamDaily = async (req, res) => {
     }
 
 }
+exports.updatePersonalDaily = async (req, res) => {
+    console.log("收到的 params:", req.params);
+    console.log("收到的請求:", req.body);
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ message: "請求體 (body) 為空，請確認 Content-Type 設定為 JSON" });
+    }
+
+    const { id } = req.params;
+    const { title, content } = req.body;
+
+    try {
+        const daily = await Daily_personal.findOne({ where: { id } });
+        if (!daily) {
+            return res.status(404).json({ message: "日誌未找到" });
+        }
+
+        await daily.update({ title, content });
+        return res.status(200).json({ message: "更新成功", data: daily });
+    } catch (error) {
+        console.error("更新錯誤:", error);
+        return res.status(500).json({ message: "更新失敗" });
+    }
+};
