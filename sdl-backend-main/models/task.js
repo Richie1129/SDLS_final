@@ -14,7 +14,11 @@ const Task = sequelize.define('task', {
     labels: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull:true
-    },  
+    }, 
+    owner:{
+        type: DataTypes.TEXT,
+        allowNull:false
+    }, 
     assignees: {
         type: DataTypes.ARRAY(DataTypes.JSONB),
         allowNull:true
@@ -27,7 +31,9 @@ const Task = sequelize.define('task', {
         type: DataTypes.ARRAY(DataTypes.TEXT),
         defaultValue: [],
         allowNull: true,
-    },
+    },    
+}, {
+    timestamps: true // ✅ 確保啟用了 Sequelize 自動生成 `createdAt` 和 `updatedAt`
 });
 
 Task.belongsToMany(Tag, {through:"Card_Tag"});

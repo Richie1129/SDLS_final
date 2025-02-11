@@ -14,7 +14,6 @@ import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
 
-
 function Carditem({ data, index, columnIndex }) {
   const [open, setOpen] = useState(false);
   const [assignMemberModalopen, setAssignMemberModalOpen] = useState(false);
@@ -25,10 +24,12 @@ function Carditem({ data, index, columnIndex }) {
     title: "",
     content: "",
     labels: [],
+    owner:"",
     assignees: [],
     columnId: "",
     images: [],
-    files: []
+    files: [],
+    createdAt: ""
   });
   const fileInputRef = useRef(null);
 
@@ -59,11 +60,14 @@ function Carditem({ data, index, columnIndex }) {
   });
 
   useEffect(() => {
-    setCardData({
+    setCardData(prev => ({
+      ...prev,
       ...data,
       images: data.images || [], // 確保 images 為陣列
-      files: data.files || [] // 確保 files 為陣列
-    });
+      files: data.files || [], // 確保 files 為陣列
+      owner: data.owner || "",  // 確保 owner 存在
+      createdAt: data.createdAt || ""  // ✅ 確保 createdAt 被存入
+    }));
   }, [data]);
 
   const handleFileUpload = async (e) => {
@@ -162,6 +166,7 @@ function Carditem({ data, index, columnIndex }) {
       </div>
     );
   };
+  
   return (
     <>
       <Draggable draggableId={data.id.toString()} index={index}>
@@ -307,6 +312,12 @@ function Carditem({ data, index, columnIndex }) {
                 <BsFillPersonFill className='w-3 h-3 sm:w-5 sm:h-5 mx-2 text-black' />
                 指派成員
               </button>
+              {data.owner && (
+                  <div className="flex items-center space-x-2">
+                      <span className="text-sm font-bold">建立者:</span>
+                      <span className="text-sm">{data.owner}</span>
+                  </div>
+              )}
               <div className="mt-3">
                 <label className="block font-bold mb-1">上傳檔案：</label>
                 <input

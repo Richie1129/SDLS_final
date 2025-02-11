@@ -107,7 +107,7 @@ exports.getKanban = async ( req, res ) => {
     await Promise.all(sortedColumnData.map(async (columnItem, columnIndex) => {
         // 获取当前列的所有任务
         const taskData = await Task.findAll({
-            attributes: ['id', 'title', 'content', 'labels', 'assignees', 'images'],
+            attributes: ['id', 'title', 'content', 'labels', 'owner', 'assignees', 'images'],
             where: {
                 columnId: columnItem.id
             }
@@ -125,6 +125,7 @@ exports.getKanban = async ( req, res ) => {
 }
 
 exports.getKanbanTask = async ( req, res ) =>{
+    console.log("🔍 取得的任務資料:", JSON.stringify(taskData, null, 2));
     const columnId = req.params.columnId;
     const taskData = await Task.findAll({
         attributes:[
@@ -132,14 +133,19 @@ exports.getKanbanTask = async ( req, res ) =>{
             'title', 
             'content', 
             'labels', 
+            'owner',
             'assignees',
-            'images'
+            'images',
+            'createdAt',
+            'updatedAt'
         ],
         where:{
             columnId : columnId
         }
     })
     .then( result =>{
+        console.log("🔍 取得的任務資料:", JSON.stringify(taskData, null, 2)); // ✅ 確認後端回傳
+        res.status(200).json(taskData); // ✅ 確保 API 回傳 `createdAt`
         res.status(200).json(result);
     })
     .catch( err => {

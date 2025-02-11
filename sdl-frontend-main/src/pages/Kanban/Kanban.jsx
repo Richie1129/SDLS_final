@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { getKanbanColumns, getKanbanTasks, addCardItem } from '../../api/kanban';
 import { getSubStage } from '../../api/stage';
 import { socket } from '../../utils/socket';
+import DraggableImage from "./components/DraggableImage"; // 確保路徑正確
 
 export default function Kanban() {
   const [kanbanData, setKanbanData] = useState([]);
@@ -162,11 +163,16 @@ export default function Kanban() {
         labels: [],
         assignees: []
       }
+
+      const username = localStorage.getItem("username"); // ✅ 取得 localStorage 裡的 username
+      console.log("🟢 Sending taskItemCreated with user:", username);
+
       socket.emit("taskItemCreated", {
         selectedcolumn,
         item,
         kanbanData,
-        projectId
+        projectId,
+        user: { username } // ✅ 確保 `user` 被傳遞
       });
       setShowForm(false);
       setNewCard("");
@@ -229,6 +235,7 @@ export default function Kanban() {
 
   return (
     <div style={{ display: 'inline-flex' }} className="layout__wrapper min-w-full h-full bg-white" >
+      <DraggableImage/>
       <div className="card p-8 w-full px-20">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="header mb-4">
