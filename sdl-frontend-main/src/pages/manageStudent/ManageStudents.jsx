@@ -163,8 +163,9 @@ const ManageStudent = () => {
                   <th className="border p-2">狀態</th>
                   <th className="border p-2">標題</th>
                   <th className="border p-2">內容</th>
+                  <th className="border p-2">建立者</th>
                   <th className="border p-2">負責人</th>
-                  <th className="border p-2">建立時間</th>
+                  {/* <th className="border p-2">建立時間</th> */}
                   <th className="border p-2">圖片</th>
                 </tr>
               </thead>
@@ -183,12 +184,13 @@ const ManageStudent = () => {
                         )}
                         <td className="border p-2">{task.title}</td>
                         <td className="border p-2">{task.content || "無內容"}</td>
+                        <td className="border p-2">{task.owner || "❌"}</td>
                         <td className={`border p-2 ${task.assignees?.length > 0 ? "font-bold" : ""}`}>
                           {task.assignees?.length > 0 
                             ? task.assignees.map(a => a.username).join(", ") 
                             : "未指派"}
                         </td>
-                        <td className="border p-2">{task.createdAt ? new Date(task.createdAt).toLocaleString() : "N/A"}</td>
+                        {/* <td className="border p-2">{task.createdAt ? new Date(task.createdAt).toLocaleString() : "N/A"}</td> */}
                         <td className="border p-2">
                           {task.images?.length > 0 ? (
                             <img src={task.images[0]} alt="任務圖片" className="w-16 h-16 mx-auto" />

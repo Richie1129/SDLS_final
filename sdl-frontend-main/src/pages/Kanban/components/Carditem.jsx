@@ -29,7 +29,6 @@ function Carditem({ data, index, columnIndex }) {
     columnId: "",
     images: [],
     files: [],
-    createdAt: ""
   });
   const fileInputRef = useRef(null);
 
@@ -66,7 +65,6 @@ function Carditem({ data, index, columnIndex }) {
       images: data.images || [], // 確保 images 為陣列
       files: data.files || [], // 確保 files 為陣列
       owner: data.owner || "",  // 確保 owner 存在
-      createdAt: data.createdAt || ""  // ✅ 確保 createdAt 被存入
     }));
   }, [data]);
 

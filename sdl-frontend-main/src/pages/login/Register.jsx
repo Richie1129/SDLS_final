@@ -33,20 +33,17 @@ export default function Register() {
     //     }
     // };
     const validateInput = () => {
-        // if (isFormSubmitted) {
+        // 帳號驗證
         if (!userData.account || userData.account.length < 6 || userData.account.length > 20) {
             setError("帳號長度應為6-20個字符");
             return false;
         }
-        if (!/^[A-Za-z0-9]+$/.test(userData.account)) {
-            setError("帳號只能包含字母、數字");
+        if (!/^\d+$/.test(userData.account) && !/^[A-Za-z0-9]+$/.test(userData.account)) {
+            setError("帳號只能包含字母或數字");
             return false;
         }
-        if (!/^[A-Za-z]/.test(userData.account)) {
-            setError("帳號必須以字母開頭");
-            return false;
-        }
-
+    
+        // 確認密碼
         if (!userData.confirmPassword) {
             setError("請確認密碼");
             return false;
@@ -56,16 +53,48 @@ export default function Register() {
         } else if (!userData.password || userData.password.length < 8) {
             setError("密碼長度至少為8個字符");
             return false;
-        } else if (!/\d/.test(userData.password) || !/[A-Z]/i.test(userData.password) || !/[^A-Za-z0-9]/.test(userData.password)) {
-            setError("密碼必須包含字母、數字及特殊字符");
+        } else if (!/\d/.test(userData.password) || !/[A-Za-z]/.test(userData.password)) {
+            setError("密碼必須包含英文字母與數字");
             return false;
         } else {
             setError("");
             return true;
         }
-        // }
-
     };
+    
+    // const validateInput = () => {
+    //     // if (isFormSubmitted) {
+    //     if (!userData.account || userData.account.length < 6 || userData.account.length > 20) {
+    //         setError("帳號長度應為6-20個字符");
+    //         return false;
+    //     }
+    //     if (!/^[A-Za-z0-9]+$/.test(userData.account)) {
+    //         setError("帳號只能包含字母、數字");
+    //         return false;
+    //     }
+    //     if (!/^[A-Za-z]/.test(userData.account)) {
+    //         setError("帳號必須以字母開頭");
+    //         return false;
+    //     }
+
+    //     if (!userData.confirmPassword) {
+    //         setError("請確認密碼");
+    //         return false;
+    //     } else if (userData.confirmPassword !== userData.password) {
+    //         setError("密碼不相符");
+    //         return false;
+    //     } else if (!userData.password || userData.password.length < 8) {
+    //         setError("密碼長度至少為8個字符");
+    //         return false;
+    //     } else if (!/\d/.test(userData.password) || !/[A-Z]/i.test(userData.password) || !/[^A-Za-z0-9]/.test(userData.password)) {
+    //         setError("密碼必須包含字母、數字及特殊字符");
+    //         return false;
+    //     } else {
+    //         setError("");
+    //         return true;
+    //     }
+
+    // };
 
 
     const userRegisterMutation = useMutation(userRegister, {
