@@ -191,10 +191,20 @@ export default function Reflection() {
             content: content
         };
     
-        console.log("更新資料:", updatedData); // 確保這裡有 `id`
-        updateDaily(updatedData); // 觸發 API 更新
-        setPersonalDailyModalOpen(false);
+        console.log("更新日誌:", updatedData);
+        updateDaily(updatedData, {
+            onSuccess: () => {
+                setEditingId(null);  // 更新後清除 editingId
+                setPersonalDailyModalOpen(false);
+                sucesssNotify("日誌更新成功");
+            },
+            onError: (error) => {
+                console.log(error);
+                errorNotify("更新失敗");
+            }
+        });
     };
+    
     
     
     const handleChange = e => {
@@ -210,8 +220,14 @@ export default function Reflection() {
     const handleAddFileChange = e => {
         setAttachFile(e.target.files);
     }
-    const handleCreatePersonalDaily = e => {
+    const handleCreateOrUpdatePersonalDaily = (e) => {
         e.preventDefault();
+        
+        if (editingId) {
+            handleSaveEdit();
+            return;
+        }
+    
         if (title.trim() !== "" && content.trim() !== "") {
             const formData = new FormData();
             formData.append('projectId', projectId);
@@ -223,14 +239,14 @@ export default function Reflection() {
             for (let key in dailyData) {
                 formData.append(key, dailyData[key]);
             }
-            console.log(...formData);
+            console.log("創建日誌:", ...formData);
             mutate(formData);
             setPersonalDailyModalOpen(false);
         } else {
             toast.error("標題及內容請填寫完整!");
         }
-
-    }
+    };
+    
     // const handleChangeSelectDaily = e => {
     //     const { name, value } = e.target;
     //     setSelectedDaily(prev => ({
@@ -575,8 +591,14 @@ export default function Reflection() {
                             className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2">
                             取消
                         </button>
-                        <button onClick={handleSaveEdit} type="submit" className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
-                            儲存
+                        <button
+                            onClick={e => {
+                                editingId ? handleSaveEdit() : handleCreateOrUpdatePersonalDaily(e);
+                            }}
+                            type="submit"
+                            className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white"
+                        >
+                            {editingId ? "更新" : "儲存"}
                         </button>
                     </div>
                 </div>

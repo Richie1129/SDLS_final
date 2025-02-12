@@ -152,25 +152,37 @@ io.on("connection", (socket) => {
         try {
             const { selectedcolumn, item, kanbanData, projectId, user } = data;
             const extractedOwner = user?.username || "未知";
-    
+            const columnId = kanbanData[selectedcolumn]?.id;
+
             const creatTask = await Task.create({
                 title: item.title,
                 content: item.content,
                 labels: item.labels || [],
                 assignees: item.assignees || [],
                 owner: extractedOwner,  // 確保 owner 存在
-                columnId: kanbanData[selectedcolumn]?.id,
+                columnId: columnId,
             });
-    
-            console.log("✅ 新建任務:", creatTask);
-    
-            io.to(projectId).emit("taskItems", creatTask);
+            console.log("creatTask", creatTask)
+            const addIntoTaskArray = await Column.findByPk(creatTask.columnId)
+
+            addIntoTaskArray.task = [...addIntoTaskArray.task, creatTask.id];
+
+            await addIntoTaskArray.save()
+                .then(() => console.log("success"))
+
+            await Project.update({
+                id: projectId
+            }, {
+                where: {
+                    id: projectId
+                }
+            });
+
+            io.to(projectId).emit("taskItems", addIntoTaskArray);
         } catch (error) {
             console.error("❌ 創建任務錯誤:", error);
         }
     });
-    
-    
     
     //update card
     ensureListener(socket, "cardUpdated", async (data) => {

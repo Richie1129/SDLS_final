@@ -79,7 +79,7 @@ export default function Kanban() {
   useEffect(() => {
     function KanbanUpdateEvent(data) {
       if (data) {
-        console.log(data);
+        console.log("KanbanUpdateEvent:",data);
         queryClient.invalidateQueries(['kanbanDatas', projectId]);
       }
     }
@@ -323,15 +323,18 @@ export default function Kanban() {
                                       <div className={`flex flex-col px-4 pb-1 overflow-y-auto max-h-[calc(100vh-21rem)] roun scrollbar-thin ${snapshot.isDraggingOver ? 'bg-customgreen/10' : 'bg-slate-50'}`}>
 
                                         <div className="items-container">
-                                          {column.task.length > 0 &&
-                                            column.task.map((item, index) => (
+                                        {Array.isArray(column.task) && column.task.length > 0 &&
+                                          column.task
+                                            .filter(item => item && item.id) // 過濾掉 null 或 undefined
+                                            .map((item, index) => (
                                               <Carditem
                                                 key={item.id}
                                                 index={index}
                                                 data={item}
                                                 columnIndex={column.id}
                                               />
-                                            ))}
+                                            ))
+                                        }
                                           {provided.placeholder}
                                         </div>
                                       </div>

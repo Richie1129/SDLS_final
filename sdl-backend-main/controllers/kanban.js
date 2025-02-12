@@ -118,6 +118,7 @@ exports.getKanban = async ( req, res ) => {
     
         // 更新当前列的任务数据
         sortedColumnData[columnIndex].task = sortedTaskData;
+        console.log("🔍 取得的任務資料1:", JSON.stringify(sortedTaskData, null, 2));
     }));
 
     res.status(200).json(sortedColumnData);
@@ -143,7 +144,6 @@ exports.getKanbanTask = async ( req, res ) =>{
     })
     .then( result =>{
         console.log("🔍 取得的任務資料:", JSON.stringify(taskData, null, 2)); // ✅ 確認後端回傳
-        res.status(200).json(taskData); // ✅ 確保 API 回傳 `createdAt`
         res.status(200).json(result);
     })
     .catch( err => {
@@ -151,6 +151,7 @@ exports.getKanbanTask = async ( req, res ) =>{
         res.status(500).send({message: 'Something Wrong!'})
     });
 }
+
 exports.createKanban = async ( projectId ) => {
     const kanban = await Kanban.create({
         column:[], 
