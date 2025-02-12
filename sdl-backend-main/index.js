@@ -44,30 +44,42 @@ app.options('*', cors()); // 處理所有路由的預檢請求
 app.set('io', io); // 確保在 socket.io 初始化後掛載
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+// 👇 確保 Express 解析 JSON
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
 // 靜態資源服務
 app.use('/daily_file', express.static(path.join(__dirname, 'daily_file')));
 console.log('Static file directory:', path.join(__dirname, 'daily_file'));
 
 
+// 🔹 確保事件監聽器不會重複綁定
+function ensureListener(socket, event, handler) {
+    if (socket.listenerCount(event) === 0) {
+        socket.on(event, handler);
+    }
+}
+
 io.on("connection", (socket) => {
     console.log(`${socket.id} a user connected`);
-    //join room
-    socket.on("join_room", (data) => {
+
+    // 加入房間類型的事件，使用 `once()` 確保只執行一次
+    socket.once("join_room", (data) => {
         socket.join(data);
-        console.log(`${socket.id} join room ${data}`);
-    })
-    //join QuestionRoom
-    socket.on("join_QuestionRoom", (roomId) => {
-        socket.join(roomId);
-        console.log(`Socket ${socket.id} joined room ${roomId}`);
+        console.log(`${socket.id} joined room ${data}`);
     });
-    //join project
-    socket.on("join_project", (data) => {
+
+    socket.once("join_QuestionRoom", (roomId) => {
+        socket.join(roomId);
+        console.log(`Socket ${socket.id} joined QuestionRoom ${roomId}`);
+    });
+
+    socket.once("join_project", (data) => {
         socket.join(data);
-        console.log(`${socket.id} join project ${data}`);
-    })
+        console.log(`${socket.id} joined project ${data}`);
+    });
+
     //send message
-    socket.on("send_message", async (data) => {
+    ensureListener(socket, "send_message", async (data) => {
         console.log(data);
         try {
             // 存儲消息到數據庫
@@ -83,7 +95,7 @@ io.on("connection", (socket) => {
         socket.to(data.room).emit("receive_message", data);
     });
     // send QuestionMessage
-    socket.on("send_QuestionMessage", async (data) => {
+    ensureListener(socket, "send_QuestionMessage", async (data) => {
         console.log("Question Message Received:", data);
         try {
             // 存儲消息到數據庫
@@ -100,7 +112,7 @@ io.on("connection", (socket) => {
         socket.to(data.questionId).emit("receive_QuestionMessage", data);
     });
     // send rag_message
-    socket.on("rag_message", async (data) => {
+    ensureListener(socket, "rag_message", async (data) => {
         console.log("接收到的資料：", data); // 打印接收到的資料
         try {
             if (data.messageType === 'input') {
@@ -138,23 +150,26 @@ io.on("connection", (socket) => {
     //create card
     socket.on("taskItemCreated", async (data) => {
         try {
-            const { selectedcolumn, item, kanbanData, projectId } = data;
-            const { title, content, labels, assignees } = item;
-            // const now = moment().tz("Asia/Taipei").format("YYYY-MM-DD HH:mm:ss.SSS ZZ");
+            const { selectedcolumn, item, kanbanData, projectId, user } = data;
+            const extractedOwner = user?.username || "未知";
+            const columnId = kanbanData[selectedcolumn]?.id;
+
             const creatTask = await Task.create({
-                title: title,
-                content: content,
-                labels: labels,
-                assignees: assignees,
-                columnId: kanbanData[selectedcolumn].id
-            })
+                title: item.title,
+                content: item.content,
+                labels: item.labels || [],
+                assignees: item.assignees || [],
+                owner: extractedOwner,  // 確保 owner 存在
+                columnId: columnId,
+            });
+            console.log("creatTask", creatTask)
             const addIntoTaskArray = await Column.findByPk(creatTask.columnId)
+
             addIntoTaskArray.task = [...addIntoTaskArray.task, creatTask.id];
+
             await addIntoTaskArray.save()
                 .then(() => console.log("success"))
-            // io.sockets.emit("taskItems", addIntoTaskArray);
-            // console.log("now",now)
-            // console.log("projectId",projectId)
+
             await Project.update({
                 id: projectId
             }, {
@@ -162,13 +177,15 @@ io.on("connection", (socket) => {
                     id: projectId
                 }
             });
+
             io.to(projectId).emit("taskItems", addIntoTaskArray);
         } catch (error) {
-            console.error("處理 taskItemCreated 時出錯：", error);
+            console.error("❌ 創建任務錯誤:", error);
         }
-    })
+    });
+    
     //update card
-    socket.on("cardUpdated", async (data) => {
+    ensureListener(socket, "cardUpdated", async (data) => {
         const { cardData, index, columnIndex, kanbanData, projectId } = data;
         const updateTask = await Task.update(cardData, {
             where: {
@@ -186,7 +203,7 @@ io.on("connection", (socket) => {
         io.to(projectId).emit("taskItem", updateTask);
     })
     //Delete card
-    socket.on("cardDelete", async (data) => {
+    ensureListener(socket, "cardDelete", async (data) => {
         const { cardData, index, columnIndex, kanbanData, projectId } = data;
 
         // Step 1: Retrieve the column and update it
@@ -232,7 +249,7 @@ io.on("connection", (socket) => {
         }
     });
     //drag card
-    socket.on("cardItemDragged", async (data) => {
+    ensureListener(socket, "cardItemDragged", async (data) => {
         const { destination, source, kanbanData, projectId } = data;
         const dragItem = {
             ...kanbanData[source.droppableId].task[source.index],
@@ -272,7 +289,7 @@ io.on("connection", (socket) => {
         });
     });
     //create column
-    socket.on("ColumnCreated", async (data) => {
+    ensureListener(socket, "ColumnCreated", async (data) => {
         try {
             const { projectId, newGroupName } = data;
             const createColumn = await Column.create({
@@ -300,7 +317,7 @@ io.on("connection", (socket) => {
         }
     })
     //drag column
-    socket.on("columnOrderChanged", async (data) => {
+    ensureListener(socket, "columnOrderChanged", async (data) => {
         const { kanbanData, kanbanId } = data;
 
         // 發送更新事件以及打印日誌
@@ -334,7 +351,7 @@ io.on("connection", (socket) => {
         }
     });
     //Delete column
-    socket.on("ColumnDelete", async (data) => {
+    ensureListener(socket, "ColumnDelete", async (data) => {
         const { columnData, kanbanId } = data;
         // console.log("columnData:", columnData);
         // console.log("kanbanId:", kanbanId);
@@ -398,7 +415,7 @@ io.on("connection", (socket) => {
         }
     });
     //Create Submit
-    socket.on('taskSubmitted', (data) => {
+    ensureListener(socket, 'taskSubmitted', (data) => {
         console.log('Task submitted:', data);
         // 將事件廣播到所有連接的客戶端，除了發送消息的客戶端
         // io.sockets.emit("taskItems", addIntoTaskArray);
@@ -406,7 +423,7 @@ io.on("connection", (socket) => {
         socket.broadcast.emit('refreshKanban', data);
     });
     //create nodes
-    socket.on("nodeCreate", async (data) => {
+    ensureListener(socket, "nodeCreate", async (data) => {
         const { title, content, ideaWallId, owner, from_id, projectId, colorindex } = data;
         const createdNode = await Node.create({
             title: title,
@@ -434,7 +451,7 @@ io.on("connection", (socket) => {
 
     })
     //Update nodes
-    socket.on("nodeUpdate", async (data) => {
+    ensureListener(socket, "nodeUpdate", async (data) => {
         const { title, content, id, projectId } = data;
         const createdNode = await Node.update(
             {
@@ -459,7 +476,7 @@ io.on("connection", (socket) => {
 
     })
     //Delete nodes
-    socket.on("nodeDelete", async (data) => {
+    ensureListener(socket, "nodeDelete", async (data) => {
         const { id, projectId } = data;
         const deleteNode = await Node.destroy(
             {
@@ -481,7 +498,7 @@ io.on("connection", (socket) => {
 
     })
     // 廣播公告
-    socket.on("emitAnnouncement", async (data) => {
+    ensureListener(socket, "emitAnnouncement", async (data) => {
         console.log("收到公告廣播請求:", data);
         const { title, content, author, projectId } = data;
 
@@ -508,8 +525,9 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        console.log(`${socket.id} a user disconnected`)
-    });
+        console.log(`${socket.id} a user disconnected`);
+        socket.removeAllListeners();  // 這行確保所有監聽器被移除，防止記憶體洩漏
+    });    
 });
 
 // 新增檔案上傳路由

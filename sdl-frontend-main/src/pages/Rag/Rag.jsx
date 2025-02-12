@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { socket } from "../../utils/socket";
 import { getRagMessageHistory } from "../../api/rag";
 
-const API_URL = "https://140.115.126.193/api/v1/chats/bbce13e4caa311efa78e0242ac120005";
-const API_KEY = "ragflow-UzNzBjMTEyNzgyMjExZWZhM2MzMDI0Mm";
+const API_URL = "https://140.115.126.193/api/v1/chats/a159fe08e2d411efb3910242ac120004"; //chat_id
+// const API_URL = "https://140.115.126.193/api/v1/agents/462f5586e2cb11efa4340242ac120004"; //agent_id
+
+const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm";
 
 const Rag = () => {
   const [history, setHistory] = useState([]);
@@ -33,11 +35,12 @@ const Rag = () => {
 
     try {
       // Step 1: 獲取 session_id
-      const sessionPayload = { name: "Test Session" };
+      const sessionPayload = { name: "Test Session" }; // chat_id
       const sessionResponse = await fetch(`${API_URL}/sessions`, {
         method: "POST",
         headers,
-        body: JSON.stringify(sessionPayload),
+        body: JSON.stringify(sessionPayload), // chat_id
+        // body: JSON.stringify({}), // agent_id
       });
       const sessionData = await sessionResponse.json();
       sessionId = sessionData?.data?.id;

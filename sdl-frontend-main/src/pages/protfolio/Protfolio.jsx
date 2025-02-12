@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AiTwotoneFolderAdd } from "react-icons/ai";
 import { GrFormClose } from "react-icons/gr";
@@ -11,7 +10,6 @@ import dateFormat from 'dateformat';
 import ProtfoliioIcon from "../../assets/AnimationProtfoliio.json";
 import Lottie from "lottie-react";
 import { socket } from '../../utils/socket';
-
 import { AiOutlineCloudDownload } from "react-icons/ai";
 import FileDownload from 'js-file-download';
 
@@ -20,12 +18,11 @@ export default function Protfolio() {
     const [folderModalOpen, setFolderModalOpen] = useState(false);
     const [modalData, setModalData] = useState({});
     const { projectId } = useParams();
-    const [activeItemId, setActiveItemId] = useState(null); // 新增状态以追踪当前被点击的项目 ID
+    const [activeItemId, setActiveItemId] = useState(null); // 新增狀態以追蹤當前被點擊的項目 ID
     const [showEmptyMessage, setShowEmptyMessage] = useState(false);
     let portfolioItemsWithTitles = [];
-
-
     
+
     const {
         isLoading,
         isError,
@@ -48,7 +45,6 @@ export default function Protfolio() {
     
       return () => clearTimeout(timer);
     }, [portfolioItemsWithTitles.length, isLoading, isError]);
-    
     
     const stageDescriptions = {
         "1-1": "提出研究主題",
@@ -80,12 +76,12 @@ export default function Protfolio() {
 
     const downloadFile = () => {
         if (modalData.fileData && modalData.fileData.data) {
-            // 将 Buffer 转换为 Uint8Array
+            // 將 Buffer 轉換為 Uint8Array
             const buffer = new Uint8Array(modalData.fileData.data);
-            // 创建 Blob 对象
+            // 創建 Blob 對象
             const blob = new Blob([buffer], { type: "application/octet-stream" });
-            // 触发文件下载
-            FileDownload(blob, "downloaded-file.png"); // 请根据实际文件类型调整 MIME 类型和文件名
+            // 觸發文件下載
+            FileDownload(blob, "downloaded-file.png"); // 請根據實際文件類型調整 MIME 類型和文件名
         }
     };
     // socket
@@ -132,7 +128,7 @@ export default function Protfolio() {
                                             } else {
                                                 const { id, stage, createdAt } = item.content;
                                                 const description = stageDescriptions[stage];
-                                                if (!description) return null; // 如果stage不在stageDescriptions中，则不渲染
+                                                if (!description) return null; // 如果stage不在stageDescriptions中，則不渲染
 
 
                                                 const isActive = id === activeItemId;
@@ -204,18 +200,18 @@ export default function Protfolio() {
                                 onClick={() => {
                                     if (modalData.fileData && modalData.fileData.data && modalData.fileName) {
                                         console.log("modalData", modalData)
-                                        // // 将 Buffer 转换为 Uint8Array
+                                        // // 將 Buffer 轉換為 Uint8Array
                                         // const buffer = new Uint8Array(modalData.fileData.data);
-                                        // // 创建 Blob 对象
+                                        // // 創建 Blob 對象
                                         // const blob = new Blob([buffer], { type: modalData.mimetype });
 
 
-                                        // 将 Buffer 转换为 Uint8Array
+                                        // 將 Buffer 轉換為 Uint8Array
                                         const buffer = new Uint8Array(modalData.fileData.data);
-                                        // 创建 Blob 对象
+                                        // 創建 Blob 對象
                                         const blob = new Blob([buffer], { type: "application/octet-stream" });
 
-                                        // 触发文件下载
+                                        // 觸發文件下載
                                         FileDownload(blob, modalData.fileName);
                                     }
                                 }}
