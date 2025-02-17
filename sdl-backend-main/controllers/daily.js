@@ -2,19 +2,30 @@ const Daily_personal = require('../models/daily_personal');
 const Daily_team = require('../models/daily_team');
 
 exports.getPersonalDaily = async (req, res) => {
-    const { userId, projectId } = req.query;
-    const personalDaily = await Daily_personal.findAll({
-        where: {
-            projectId: projectId,
-            userId: userId
-        }
-    })
-        .then(result => {
-            res.status(200).json(result)
-        })
-        .catch(err => console.log(err));
+    const { userId, projectId, isTeacher } = req.query;
 
-}
+    try {
+        let personalDaily;
+
+        if (isTeacher === "true") {
+            // 教師端：獲取該 projectId 內所有學生的個人日誌
+            personalDaily = await Daily_personal.findAll({
+                where: { projectId }
+            });
+        } else {
+            // 學生端：僅獲取自己(userId)的日誌
+            personalDaily = await Daily_personal.findAll({
+                where: { projectId, userId }
+            });
+        }
+
+        res.status(200).json(personalDaily);
+    } catch (err) {
+        console.error("取得個人日誌失敗:", err);
+        res.status(500).json({ message: "獲取日誌失敗", error: err });
+    }
+};
+
 
 exports.createPersonalDaily = async (req, res) => {
     const { userId, projectId, title, content } = req.body;

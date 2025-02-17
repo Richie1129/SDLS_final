@@ -111,12 +111,15 @@ export default function Reflection() {
         setIsTooltipVisible(false);
     };
 
-    const {
-        isLoading,
-        isError,
-        error,
-    } = useQuery("personalDaily", () => getAllPersonalDaily(
-        { params: { userId: localStorage.getItem("id"), projectId: projectId } }),
+    const userRole = localStorage.getItem("role"); // 從 localStorage 取得使用者角色
+
+    const { isLoading, isError, error } = useQuery(
+        ["personalDaily", { projectId, isTeacher: userRole === "teacher" }],
+        () => getAllPersonalDaily({
+            projectId: projectId, 
+            userId: localStorage.getItem("id"),
+            isTeacher: userRole === "teacher"
+        }),
         {
             onSuccess: setPersonalDaily,
             enabled: !!projectId

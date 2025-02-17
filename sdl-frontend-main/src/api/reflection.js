@@ -10,9 +10,15 @@ const dailyApi = axios.create({
 
 // 取得所有個人日報
 export const getAllPersonalDaily = async (config) => {
-    const response = await dailyApi.get("/", config);
+    const response = await dailyApi.get("/", {
+        params: { 
+            projectId: config.projectId, 
+            userId: config.userId, 
+            isTeacher: config.isTeacher // 傳入教師身份
+        }
+    });
     return response.data;
-}
+};
 
 // 建立個人日報
 export const createPersonalDaily = async (data) => {
