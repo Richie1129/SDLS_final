@@ -139,14 +139,14 @@ export default function SideBar() {
         { name: "歷程檔案", link: `/project/${projectId}/protfolio`, icon: TiFolderOpen },
         { name: "反思日誌", link: `/project/${projectId}/reflection`, icon: CgNotes },
         { name: "提問專區", link: `/project/${projectId}/askQuestion`, icon: TbMessageQuestion },
-        { name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion }, // Student only
-        { name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard }, // Teacher only
+        // { name: "探究幫手", link: `/project/${projectId}/rag`, icon: TbZoomQuestion }, // Student only
+        // { name: "學習儀錶板", link: `/project/${projectId}/manageIdeaWall`, icon: LuLayoutDashboard }, // Teacher only
         { name: "學生管理", link: `/project/${projectId}/manageStudent`, icon: LuLayoutDashboard }, // Teacher only
     ];
     
     // 定義 Student 和 Teacher 的排序順序
     const studentOrder = ["進度看板", "想法延伸", "成果紀錄", "歷程檔案", "反思日誌", "提問專區", "探究幫手"];
-    const teacherOrder = ["進度看板", "想法延伸", "歷程檔案", "反思日誌", "提問專區", "學習儀錶板", "學生管理"];
+    const teacherOrder = ["進度看板", "想法延伸", "成果紀錄", "歷程檔案", "反思日誌", "提問專區", "學習儀錶板", "學生管理"];
     
     // 根據 `role` 過濾 `menus`，並依照對應的順序排序
     const menus = baseMenus

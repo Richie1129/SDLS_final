@@ -147,7 +147,27 @@ exports.getSubmit = async(req, res) => {
         console.log("fileData",submit.fileData)
         // res.download(`./daily_file/${submit.fileData.filename}`)
     }
-}
+};
+
+exports.updateSubmit = async (req, res) => {
+    const submitId = req.params.submitId;
+    const { content } = req.body;
+
+    try {
+        const submit = await Submit.findByPk(submitId);
+        if (!submit) {
+            return res.status(404).json({ message: "找不到該提交記錄" });
+        }
+
+        await submit.update({ content });
+
+        res.status(200).json({ message: "內容更新成功" });
+    } catch (error) {
+        console.error("更新內容失敗:", error);
+        res.status(500).json({ message: "更新失敗" });
+    }
+};
+
 
 // exports.getProfolioSubmit = async(req, res) => {
 //     const { projectId } = req.query;

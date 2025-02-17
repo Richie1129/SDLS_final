@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AiTwotoneFolderAdd } from "react-icons/ai";
 import { GrFormClose } from "react-icons/gr";
 import { useQuery, useQueryClient } from 'react-query';
-import { getAllSubmit } from '../../api/submit';
+import { getAllSubmit, updateSubmitTask } from '../../api/submit';
 import { useParams } from 'react-router-dom';
 import Loader from '../../components/Loader';
 import FolderModal from './components/folderModal';
@@ -12,6 +12,8 @@ import Lottie from "lottie-react";
 import { socket } from '../../utils/socket';
 import { AiOutlineCloudDownload } from "react-icons/ai";
 import FileDownload from 'js-file-download';
+import { BiSave } from "react-icons/bi";
+import Swal from "sweetalert2";
 
 export default function Protfolio() {
     const [stagePortfolio, setStagePortfolio] = useState([]);
@@ -21,8 +23,9 @@ export default function Protfolio() {
     const [activeItemId, setActiveItemId] = useState(null); // 新增狀態以追蹤當前被點擊的項目 ID
     const [showEmptyMessage, setShowEmptyMessage] = useState(false);
     let portfolioItemsWithTitles = [];
+    // 在 component 內部
+    const [editableContent, setEditableContent] = useState(""); 
     
-
     const {
         isLoading,
         isError,
@@ -45,6 +48,51 @@ export default function Protfolio() {
     
       return () => clearTimeout(timer);
     }, [portfolioItemsWithTitles.length, isLoading, isError]);
+
+    // 當 modalData 更新時，解析 JSON 並初始化狀態
+    useEffect(() => {
+        if (modalData.content) {
+            try {
+                setEditableContent(JSON.parse(modalData.content));
+            } catch (error) {
+                console.error("解析 JSON 失敗:", error);
+                setEditableContent({});
+            }
+        }
+    }, [modalData]);
+
+    // 變更特定欄位的內容
+    const handleChange = (key, value) => {
+        setEditableContent((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
+
+    // 儲存修改後的內容
+    const handleSave = async () => {
+        try {
+            await updateSubmitTask(modalData.id, { content: JSON.stringify(editableContent) });
+    
+            Swal.fire({
+                icon: "success",
+                title: "儲存成功！",
+                text: "內容已成功儲存",
+                confirmButtonColor: "#5BA491",
+            });
+    
+            setFolderModalOpen(false);
+        } catch (error) {
+            console.error("儲存失敗:", error);
+    
+            Swal.fire({
+                icon: "error",
+                title: "儲存失敗",
+                text: "請稍後再試",
+                confirmButtonColor: "#d33",
+            });
+        }
+    };
     
     const stageDescriptions = {
         "1-1": "提出研究主題",
@@ -179,16 +227,28 @@ export default function Protfolio() {
                         <h2 className="text-xl font-bold text-[#5BA491]">{stageDescriptions[modalData.stage]}</h2>
                         <span className="text-sm text-gray-600">階段: {modalData.stage}</span>
                     </div>
-                    {
-                        modalData.content ?
-                            Object.entries(JSON.parse(modalData.content)).map((element, index) => (
-                                <div className="mt-3 p-4 bg-gray-100 rounded-lg w-full" key={index}>
-                                    <span className="font-bold text-lg text-gray-700">{element[0]}:</span>
-                                    <p className="text-gray-600">{element[1]}</p>
-                                </div>
-                            ))
-                            : <p className="text-gray-700">沒有可顯示的內容</p>
-                    }
+                    {/* 依照 JSON 顯示多個 textarea */}
+                    {Object.entries(editableContent).map(([key, value], index) => (
+                        <div className="mt-3 p-4 bg-gray-100 rounded-lg w-full" key={index}>
+                            <span className="font-bold text-lg text-gray-700">{key}:</span>
+                            <textarea
+                                className="rounded outline-none ring-2 ring-customgreen w-full p-1 mt-2"
+                                rows={3}
+                                value={value}
+                                onChange={(e) => handleChange(key, e.target.value)}
+                            />
+                        </div>
+                    ))}
+
+                    {/* 儲存按鈕 */}
+                    <button
+                        className="mt-3 flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300"
+                        onClick={handleSave}
+                    >
+                        <BiSave size={32} className="text-white mr-1" />
+                        <span>儲存內容</span>
+                    </button>
+                    
                     {modalData.fileData && (
                         <>
                             <div className="mt-3 p-4 bg-gray-100 rounded-lg w-full">

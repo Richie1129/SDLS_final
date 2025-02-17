@@ -320,12 +320,14 @@ const Tooltip = ({ children, content }) => {
             {localStorage.getItem("username")}
           </h3>
           <div className="relative flex items-center">
+          {role === "teacher" && (
           <button
             className="flex items-center justify-center mr-4 cursor-pointer"
             onClick={() => navigate("/overView")}
           >
             <LuLayoutDashboard size={24} />
           </button>
+          )}
           </div>
           <div className="relative">
             <TbBell size={24} className="ml-2 cursor-pointer" onClick={() => setShowNotifications(!showNotifications)} />
