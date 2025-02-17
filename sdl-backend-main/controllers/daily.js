@@ -1,3 +1,4 @@
+//controllers/daily.js
 const Daily_personal = require('../models/daily_personal');
 const Daily_team = require('../models/daily_team');
 

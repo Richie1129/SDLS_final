@@ -1,3 +1,4 @@
+//Reflection
 import React, { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
 import { GrFormClose } from "react-icons/gr";
@@ -16,6 +17,7 @@ import { AiOutlineCloudDownload } from "react-icons/ai";
 import { GrCircleQuestion } from 'react-icons/gr';
 // import { motion } from 'framer-motion';
 import { motion, useMotionValue } from "framer-motion";
+
 const imgs = [
     "/imgs/nature/1.jpg",
     "/imgs/nature/2.jpg",
