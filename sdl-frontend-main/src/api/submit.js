@@ -30,6 +30,11 @@ export const getAllSubmit = async (config) => {
     return response.data
 }
 
+export const updateSubmitTask = async (submitId, data) => {
+    const response = await getsubmitApi.put(`/${submitId}`, data);
+    return response.data;
+};
+
 // export const getProfolioSubmit = async (submitId,config) => {
 //     const response = await getsubmitApi.get(`/${submitId}/profolio`,config)
 //     return response.data
