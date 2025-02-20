@@ -32,3 +32,8 @@ export const inviteForProject = async (data) => {
     const response = await projectApi.post("/referral", data)
     return response.data
 }
+
+export const updateProject = async (projectId, data) => {
+    const response = await projectApi.put(`/${projectId}`, data);
+    return response.data;
+};

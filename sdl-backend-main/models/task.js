@@ -17,7 +17,7 @@ const Task = sequelize.define('task', {
     }, 
     owner:{
         type: DataTypes.TEXT,
-        allowNull:false
+        allowNull:true
     }, 
     assignees: {
         type: DataTypes.ARRAY(DataTypes.JSONB),

@@ -8,8 +8,8 @@ import { FaSortDown } from "react-icons/fa";
 import { BsBoxArrowInRight } from "react-icons/bs";
 import Loader from '../../components/Loader';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { createProject, getAllProject, inviteForProject, getProjectsByMentor } from '../../api/project';
-import { getAllTeachers } from '../../api/users';
+import { createProject, getAllProject, inviteForProject, getProjectsByMentor, updateProject } from '../../api/project';
+import { getAllTeachers, getProjectUser } from '../../api/users';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { GrFormAdd } from "react-icons/gr";
@@ -34,6 +34,7 @@ export default function HomePage() {
   const [projectDescription, setProjectDescription] = useState("");
   const role = localStorage.getItem("role");
   const userName = localStorage.getItem('username');
+  const [member, setMembers] = useState([]);
   const {
     isLoading,
     isError,
@@ -43,6 +44,60 @@ export default function HomePage() {
     { params: { userId: localStorage.getItem("id") } }),
     { onSuccess: setProjectData }
   );
+  const [editProjectModalOpen, setEditProjectModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+  const handleEditProject = (project) => {
+  setSelectedProjectId(project.id);
+  setProjectName(project.name);
+  setProjectDescription(project.describe);
+  setCreateProjectModalOpen(false); // 確保不會開啟錯誤的 Modal
+  setEditProjectModalOpen(true);
+};
+
+const handleUpdateProject = (projectId) => {
+  const updatedProjectData = {
+    projectName,
+    projectdescribe: projectDescription,
+    projectMentor: createprojectData.projectMentor,  // ✅ 修正為正確的變數,
+  };
+
+  updateMutate({ projectId, projectData: updatedProjectData });
+};
+
+const { mutate: updateMutate } = useMutation(
+  ({ projectId, projectData }) => updateProject(projectId, projectData), 
+  {
+    onSuccess: (res) => {
+      console.log(res);
+      queryClient.invalidateQueries("projectDatas"); // 重新獲取專案數據
+      setEditProjectModalOpen(false); // 關閉 Modal
+
+      Swal.fire({
+        icon: "success",
+        title: "成功",
+        text: res.message,
+        customClass: {
+          backdrop: "bg-red-500",
+          popup: "bg-[#F7F6F6]",
+        },
+      });
+    },
+    onError: (error) => {
+      console.log(error);
+
+      Swal.fire({
+        icon: "error",
+        title: "失敗",
+        text: error.response?.data?.message || "更新失敗，請重試！",
+        customClass: {
+          backdrop: "bg-red-500",
+          popup: "bg-[#F7F6F6]",
+        },
+      });
+    },
+  }
+);
 
   // const {mutate} = useMutation( createProject, {
   //   onSuccess : ( res ) =>{
@@ -63,6 +118,56 @@ export default function HomePage() {
     }).catch(error => {
       console.log('Error fetching teachers:', error);
     });
+  }, []);
+
+  useEffect(() => {
+      async function fetchMembers() {
+          try {
+              const mentorName = localStorage.getItem("username");
+              console.log("當前老師名稱:", mentorName);
+  
+              if (!mentorName) {
+                  console.error("未找到老師名稱，無法獲取專案用戶資訊");
+                  return;
+              }
+  
+              const mentorProjects = await getProjectsByMentor(mentorName);
+              console.log("老師指導的專案:", mentorProjects);
+  
+              if (!mentorProjects || mentorProjects.length === 0) {
+                  console.warn("該老師沒有指導任何專案");
+                  return;
+              }
+  
+              const projectIds = mentorProjects.map(project => project.id);
+              console.log("老師的專案 ID 列表:", projectIds);
+  
+              const projectUsersPromises = projectIds.map(async (projectId) => {
+                  try {
+                      console.log(`正在獲取專案 ID ${projectId} 的用戶`);
+                      const users = await getProjectUser(projectId);
+                      console.log(`專案 ID ${projectId} 的用戶:`, users);
+                      return users.map(user => ({ ...user, projectId }));  // 這裡加入 projectId
+                  } catch (err) {
+                      console.error(`獲取專案 ID ${projectId} 的用戶失敗`, err);
+                      return [];
+                  }
+              });
+  
+              const projectUsers = await Promise.all(projectUsersPromises);
+              const flatUsers = projectUsers.flat();
+  
+              console.log("所有專案的用戶資訊 (展開後):", flatUsers);
+  
+              // 這行很重要，確保 React 重新渲染
+              setMembers(projectUsers.flat());  // 確保資料更新
+  
+          } catch (error) {
+              console.error("獲取老師所指導專案的用戶資訊失敗:", error);
+          }
+      }
+  
+      fetchMembers();
   }, []);
 
   const { mutate } = useMutation(createProject, {
@@ -276,6 +381,12 @@ export default function HomePage() {
                     </Tooltip>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center text-gray-500'>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,6 +406,11 @@ export default function HomePage() {
                         <div className='bg-[#5BA491] h-2.5 rounded-full transition-all duration-300 ease-in-out' style={{ width: `${calculateProgress(projectItem.currentStage, projectItem.currentSubStage)}%` }}></div>
                       </div>
                     </ProgressTooltip>
+                    <button 
+                      onClick={() => handleEditProject(projectItem)} 
+                      className="mt-2 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
+                      編輯活動
+                    </button>
                     <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動</button>
                   </div>
                 ))}
@@ -321,6 +437,12 @@ export default function HomePage() {
                     </Tooltip>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center'>
                         創建於 {dateFormat(projectItem.createdAt, "yyyy/mm/dd")}
@@ -364,6 +486,12 @@ export default function HomePage() {
                     </Tooltip>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center'>
                         創建於 {dateFormat(projectItem.createdAt, "yyyy/mm/dd")}
@@ -385,55 +513,80 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Modal open={createProjectModalOpen} onClose={() => setCreateProjectModalOpen(false)} opacity={true} position={"justify-center items-center"}>
-          <button onClick={() => setCreateProjectModalOpen(false)} className=' absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
-            <GrFormClose className=' w-6 h-6' />
-          </button>
-          <div className='flex flex-col p-3'>
-            <h3 className=' font-bold text-base mb-3'>建立活動</h3>
-            <p className=' font-bold text-base mb-3'>活動名稱</p>
-            <input className=" rounded outline-none ring-2 p-1 ring-customgreen w-full mb-3"
-              type="text"
-              placeholder="活動名稱..."
-              name='projectName'
-              onChange={handleChange}
-              value={projectName}
-              required
-            />
-            <p className=' font-bold text-base mb-3'>活動描述</p>
-            <textarea className=" rounded outline-none ring-2 ring-customgreen w-full p-1"
-              rows={3}
-              placeholder="活動描述..."
-              name='projectdescribe'
-              onChange={handleChange}
-              value={projectDescription}
-            />
-            <div className="mt-4">
-              <label className="block text-gray-700 text-base">指導老師</label>
-              <select name="projectMentor" onChange={handleChange} value={createprojectData.projectMentor} className=" text-base w-full px-4 py-3 rounded-lg bg-white mt-2 border focus:border-customgreen focus:bg-white focus:outline-none" required>
-                <option value="" disabled>- 請選擇指導老師 -</option>
-                {teachers.map(teacher => (
-                  <option key={teacher.id} value={teacher.username}>{teacher.username}</option> // 假設教師物件有 'id' 和 'name' 屬性
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className='flex justify-end m-2'>
-            <button
-              onClick={() => setCreateProjectModalOpen(false)}
-              className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2" >
-              取消
-            </button>
+        <Modal open={createProjectModalOpen || editProjectModalOpen} 
+                onClose={() => {
+                  setCreateProjectModalOpen(false);
+                  setEditProjectModalOpen(false);
+                }} 
+                opacity={true} 
+                position={"justify-center items-center"}>
+
             <button onClick={() => {
-              handleCreateProject();
-            }}
-              type="submit"
-              className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
-              儲存
+                setCreateProjectModalOpen(false);
+                setEditProjectModalOpen(false);
+              }} 
+              className='absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
+              <GrFormClose className='w-6 h-6' />
             </button>
 
-          </div>
-        </Modal>
+            <div className='flex flex-col p-3'>
+              <h3 className='font-bold text-base mb-3'>
+                {editProjectModalOpen ? "更新活動" : "建立活動"}
+              </h3>
+
+              <p className='font-bold text-base mb-3'>活動名稱</p>
+              <input className="rounded outline-none ring-2 p-1 ring-customgreen w-full mb-3"
+                type="text"
+                placeholder="活動名稱..."
+                name='projectName'
+                onChange={handleChange}
+                value={projectName}
+                required
+              />
+
+              <p className='font-bold text-base mb-3'>活動描述</p>
+              <textarea className="rounded outline-none ring-2 ring-customgreen w-full p-1"
+                rows={3}
+                placeholder="活動描述..."
+                name='projectdescribe'
+                onChange={handleChange}
+                value={projectDescription}
+              />
+
+              <div className="mt-4">
+                <label className="block text-gray-700 text-base">指導老師</label>
+                <select name="projectMentor" onChange={handleChange} value={createprojectData.projectMentor} 
+                        className="text-base w-full px-4 py-3 rounded-lg bg-white mt-2 border focus:border-customgreen focus:bg-white focus:outline-none" required>
+                  <option value="" disabled>- 請選擇指導老師 -</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.username}>{teacher.username}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className='flex justify-end m-2'>
+              <button onClick={() => {
+                  setCreateProjectModalOpen(false);
+                  setEditProjectModalOpen(false);
+                }}
+                className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2">
+                取消
+              </button>
+
+              <button onClick={() => {
+                  if (editProjectModalOpen) {
+                    handleUpdateProject(selectedProjectId);
+                  } else {
+                    handleCreateProject();
+                  }
+                }}
+                type="submit"
+                className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
+                {editProjectModalOpen ? "更新" : "儲存"}
+              </button>
+            </div>
+          </Modal>
         <Modal open={inviteProjectModalOpen} onClose={() => setInviteProjectModalOpen(false)} opacity={true} position={"justify-center items-center"}>
           <button onClick={() => setInviteProjectModalOpen(false)} className=' absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
             <GrFormClose className=' w-6 h-6' />
@@ -478,7 +631,7 @@ export default function HomePage() {
     return (
       <div className='min-w-full min-h-screen bg-gray-100 overflow-auto scrollbar-hidden'>
         <TopBar />
-        <div class='flex flex-col my-10 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-20 2xl:px-40 py-10 w-full items-center'>
+        <div className='flex flex-col my-10 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-20 2xl:px-40 py-10 w-full items-center'>
           <div className='flex flex-col w-full '>
             <Accordion
               index={0}
@@ -508,8 +661,17 @@ export default function HomePage() {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center text-gray-500'>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -529,6 +691,11 @@ export default function HomePage() {
                         <div className='bg-[#5BA491] h-2.5 rounded-full transition-all duration-300 ease-in-out' style={{ width: `${calculateProgress(projectItem.currentStage, projectItem.currentSubStage)}%` }}></div>
                       </div>
                     </ProgressTooltip>
+                    <button 
+                      onClick={() => handleEditProject(projectItem)} 
+                      className="mt-2 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
+                      編輯活動
+                    </button>
                     <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動</button>
                   </div>
                 ))}
@@ -553,8 +720,17 @@ export default function HomePage() {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center'>
                         創建於 {dateFormat(projectItem.createdAt, "yyyy/mm/dd")}
@@ -596,8 +772,17 @@ export default function HomePage() {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
+                    <div className='text-sm text-gray-500'>成員：
+                    {member
+                      .filter(member => member.projectId === projectItem.id)
+                      .map(member => member.username)
+                      .join("、") || "無成員"}
+                    </div>
                     <div className='flex justify-between text-sm text-gray-500'>
                       <span className='flex items-center'>
                         創建於 {dateFormat(projectItem.createdAt, "yyyy/mm/dd")}
@@ -619,55 +804,80 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Modal open={createProjectModalOpen} onClose={() => setCreateProjectModalOpen(false)} opacity={true} position={"justify-center items-center"}>
-          <button onClick={() => setCreateProjectModalOpen(false)} className=' absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
-            <GrFormClose className=' w-6 h-6' />
-          </button>
-          <div className='flex flex-col p-3'>
-            <h3 className=' font-bold text-base mb-3'>建立活動</h3>
-            <p className=' font-bold text-base mb-3'>活動名稱</p>
-            <input className=" rounded outline-none ring-2 p-1 ring-customgreen w-full mb-3"
-              type="text"
-              placeholder="活動名稱..."
-              name='projectName'
-              onChange={handleChange}
-              value={projectName}
-              required
-            />
-            <p className=' font-bold text-base mb-3'>活動描述</p>
-            <textarea className=" rounded outline-none ring-2 ring-customgreen w-full p-1"
-              rows={3}
-              placeholder="活動描述..."
-              name='projectdescribe'
-              onChange={handleChange}
-              value={projectDescription}
-            />
-            <div className="mt-4">
-              <label className="block text-gray-700 text-base">指導老師</label>
-              <select name="projectMentor" onChange={handleChange} value={createprojectData.projectMentor} className=" text-base w-full px-4 py-3 rounded-lg bg-white mt-2 border focus:border-customgreen focus:bg-white focus:outline-none" required>
-                <option value="" disabled>- 請選擇指導老師 -</option>
-                {teachers.map(teacher => (
-                  <option key={teacher.id} value={teacher.username}>{teacher.username}</option> // 假設教師物件有 'id' 和 'name' 屬性
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className='flex justify-end m-2'>
-            <button
-              onClick={() => setCreateProjectModalOpen(false)}
-              className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2" >
-              取消
-            </button>
+        <Modal open={createProjectModalOpen || editProjectModalOpen} 
+                onClose={() => {
+                  setCreateProjectModalOpen(false);
+                  setEditProjectModalOpen(false);
+                }} 
+                opacity={true} 
+                position={"justify-center items-center"}>
+
             <button onClick={() => {
-              handleCreateProject();
-            }}
-              type="submit"
-              className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
-              儲存
+                setCreateProjectModalOpen(false);
+                setEditProjectModalOpen(false);
+              }} 
+              className='absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
+              <GrFormClose className='w-6 h-6' />
             </button>
 
-          </div>
-        </Modal>
+            <div className='flex flex-col p-3'>
+              <h3 className='font-bold text-base mb-3'>
+                {editProjectModalOpen ? "更新活動" : "建立活動"}
+              </h3>
+
+              <p className='font-bold text-base mb-3'>活動名稱</p>
+              <input className="rounded outline-none ring-2 p-1 ring-customgreen w-full mb-3"
+                type="text"
+                placeholder="活動名稱..."
+                name='projectName'
+                onChange={handleChange}
+                value={projectName}
+                required
+              />
+
+              <p className='font-bold text-base mb-3'>活動描述</p>
+              <textarea className="rounded outline-none ring-2 ring-customgreen w-full p-1"
+                rows={3}
+                placeholder="活動描述..."
+                name='projectdescribe'
+                onChange={handleChange}
+                value={projectDescription}
+              />
+
+              <div className="mt-4">
+                <label className="block text-gray-700 text-base">指導老師</label>
+                <select name="projectMentor" onChange={handleChange} value={createprojectData.projectMentor} 
+                        className="text-base w-full px-4 py-3 rounded-lg bg-white mt-2 border focus:border-customgreen focus:bg-white focus:outline-none" required>
+                  <option value="" disabled>- 請選擇指導老師 -</option>
+                  {teachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.username}>{teacher.username}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className='flex justify-end m-2'>
+              <button onClick={() => {
+                  setCreateProjectModalOpen(false);
+                  setEditProjectModalOpen(false);
+                }}
+                className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2">
+                取消
+              </button>
+
+              <button onClick={() => {
+                  if (editProjectModalOpen) {
+                    handleUpdateProject(selectedProjectId);
+                  } else {
+                    handleCreateProject();
+                  }
+                }}
+                type="submit"
+                className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
+                {editProjectModalOpen ? "更新" : "儲存"}
+              </button>
+            </div>
+          </Modal>
         <Modal open={inviteProjectModalOpen} onClose={() => setInviteProjectModalOpen(false)} opacity={true} position={"justify-center items-center"}>
           <button onClick={() => setInviteProjectModalOpen(false)} className=' absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200'>
             <GrFormClose className=' w-6 h-6' />

@@ -446,6 +446,29 @@ exports.getAllStudents = async (req, res) => {
     }
 };
 
+exports.updateProject = async (req, res) => {
+    const projectId = req.params.projectId;
+    const { projectName, projectdescribe, projectMentor } = req.body;
+
+    try {
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({ message: '找不到此活動！' });
+        }
+
+        // 更新專案資訊
+        project.name = projectName;
+        project.describe = projectdescribe;
+        project.mentor = projectMentor;
+
+        await project.save();
+
+        res.status(200).json({ message: '活動更新成功！', project });
+    } catch (error) {
+        console.error("更新專案錯誤:", error);
+        res.status(500).json({ message: '活動更新失敗！' });
+    }
+};
 
 // exports.inviteForProject = async( req, res) => {
 //     const referral_Code = req.body.referral_Code;
