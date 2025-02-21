@@ -120,55 +120,135 @@ const { mutate: updateMutate } = useMutation(
     });
   }, []);
 
+  // useEffect(() => {
+  //     async function fetchMembers() {
+  //         try {
+  //             const mentorName = localStorage.getItem("username");
+  //             console.log("當前老師名稱:", mentorName);
+  
+  //             if (!mentorName) {
+  //                 console.error("未找到老師名稱，無法獲取專案用戶資訊");
+  //                 return;
+  //             }
+  
+  //             const mentorProjects = await getProjectsByMentor(mentorName);
+  //             console.log("老師指導的專案:", mentorProjects);
+  
+  //             if (!mentorProjects || mentorProjects.length === 0) {
+  //                 console.warn("該老師沒有指導任何專案");
+  //                 return;
+  //             }
+  
+  //             const projectIds = mentorProjects.map(project => project.id);
+  //             console.log("老師的專案 ID 列表:", projectIds);
+  
+  //             const projectUsersPromises = projectIds.map(async (projectId) => {
+  //                 try {
+  //                     console.log(`正在獲取專案 ID ${projectId} 的用戶`);
+  //                     const users = await getProjectUser(projectId);
+  //                     console.log(`專案 ID ${projectId} 的用戶:`, users);
+  //                     return users.map(user => ({ ...user, projectId }));  // 這裡加入 projectId
+  //                 } catch (err) {
+  //                     console.error(`獲取專案 ID ${projectId} 的用戶失敗`, err);
+  //                     return [];
+  //                 }
+  //             });
+  
+  //             const projectUsers = await Promise.all(projectUsersPromises);
+  //             const flatUsers = projectUsers.flat();
+  
+  //             console.log("所有專案的用戶資訊 (展開後):", flatUsers);
+  
+  //             // 這行很重要，確保 React 重新渲染
+  //             setMembers(projectUsers.flat());  // 確保資料更新
+  
+  //         } catch (error) {
+  //             console.error("獲取老師所指導專案的用戶資訊失敗:", error);
+  //         }
+  //     }
+  
+  //     fetchMembers();
+  // }, []);
+
   useEffect(() => {
-      async function fetchMembers() {
-          try {
-              const mentorName = localStorage.getItem("username");
-              console.log("當前老師名稱:", mentorName);
-  
-              if (!mentorName) {
-                  console.error("未找到老師名稱，無法獲取專案用戶資訊");
-                  return;
-              }
-  
-              const mentorProjects = await getProjectsByMentor(mentorName);
-              console.log("老師指導的專案:", mentorProjects);
-  
-              if (!mentorProjects || mentorProjects.length === 0) {
-                  console.warn("該老師沒有指導任何專案");
-                  return;
-              }
-  
-              const projectIds = mentorProjects.map(project => project.id);
-              console.log("老師的專案 ID 列表:", projectIds);
-  
-              const projectUsersPromises = projectIds.map(async (projectId) => {
-                  try {
-                      console.log(`正在獲取專案 ID ${projectId} 的用戶`);
-                      const users = await getProjectUser(projectId);
-                      console.log(`專案 ID ${projectId} 的用戶:`, users);
-                      return users.map(user => ({ ...user, projectId }));  // 這裡加入 projectId
-                  } catch (err) {
-                      console.error(`獲取專案 ID ${projectId} 的用戶失敗`, err);
-                      return [];
-                  }
-              });
-  
-              const projectUsers = await Promise.all(projectUsersPromises);
-              const flatUsers = projectUsers.flat();
-  
-              console.log("所有專案的用戶資訊 (展開後):", flatUsers);
-  
-              // 這行很重要，確保 React 重新渲染
-              setMembers(projectUsers.flat());  // 確保資料更新
-  
-          } catch (error) {
-              console.error("獲取老師所指導專案的用戶資訊失敗:", error);
+    async function fetchTeacherMembers() {
+        try {
+            const mentorName = localStorage.getItem("username");
+            if (!mentorName) {
+                console.error("未找到老師名稱，無法獲取專案用戶資訊");
+                return;
+            }
+
+            const mentorProjects = await getProjectsByMentor(mentorName);
+            if (!mentorProjects || mentorProjects.length === 0) {
+                console.warn("該老師沒有指導任何專案");
+                return;
+            }
+
+            const projectIds = mentorProjects.map(project => project.id);
+
+            const projectUsersPromises = projectIds.map(async (projectId) => {
+                try {
+                    const users = await getProjectUser(projectId);
+                    return users.map(user => ({ ...user, projectId }));
+                } catch (err) {
+                    console.error(`獲取專案 ID ${projectId} 的用戶失敗`, err);
+                    return [];
+                }
+            });
+
+            const projectUsers = await Promise.all(projectUsersPromises);
+            setMembers(projectUsers.flat());  // 更新成員
+            console.log("老師的所有專案成員:", projectUsers.flat());
+        } catch (error) {
+            console.error("獲取老師所指導專案的用戶資訊失敗:", error);
+        }
+    }
+
+    if (role === "teacher") {
+        fetchTeacherMembers();
+    }
+}, [role]);
+
+useEffect(() => {
+  async function fetchStudentMembers() {
+      try {
+          const userId = localStorage.getItem("id");
+          if (!userId) {
+              console.error("未找到學生 ID，無法獲取專案用戶資訊");
+              return;
           }
+
+          const studentProjects = await getAllProject({ params: { userId } });
+          if (!studentProjects || studentProjects.length === 0) {
+              console.warn("該學生沒有參與任何專案");
+              return;
+          }
+
+          const projectIds = studentProjects.map(project => project.id);
+
+          const projectUsersPromises = projectIds.map(async (projectId) => {
+              try {
+                  const users = await getProjectUser(projectId);
+                  return users.map(user => ({ ...user, projectId }));
+              } catch (err) {
+                  console.error(`獲取專案 ID ${projectId} 的用戶失敗`, err);
+                  return [];
+              }
+          });
+
+          const projectUsers = await Promise.all(projectUsersPromises);
+          setMembers(projectUsers.flat());  // 更新成員
+          console.log("學生的所有專案成員:", projectUsers.flat());
+      } catch (error) {
+          console.error("獲取學生所屬專案的用戶資訊失敗:", error);
       }
-  
-      fetchMembers();
-  }, []);
+  }
+
+  if (role === "student") {
+      fetchStudentMembers();
+  }
+}, [role]);
 
   const { mutate } = useMutation(createProject, {
     onSuccess: (res) => {
