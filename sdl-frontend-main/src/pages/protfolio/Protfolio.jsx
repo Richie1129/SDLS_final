@@ -218,7 +218,7 @@ export default function Protfolio() {
                 </div>
             </div>
 
-            <div className={`w-[400px] h-full fixed right-0 top-16 bg-white shadow-lg transform ease-in-out duration-300 ${folderModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`w-[400px] h-[90vh] fixed right-0 top-16 bg-white shadow-lg transform ease-in-out duration-300 overflow-y-auto max-h-[90vh] ${folderModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <button onClick={() => setFolderModalOpen(false)} className="absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200">
                     <GrFormClose className="w-6 h-6" />
                 </button>
