@@ -574,11 +574,11 @@ app.use((error, req, res, next) => {
 });
 
 // sync database
-sequelize.sync({ alter: true })  //{force:true} {alter:true}
-    .then(result => {
-        console.log("Database connected");
+// sequelize.sync({ alter: true })  //{force:true} {alter:true}
+//     .then(result => {
+//         console.log("Database connected");
 
-    })
-    .catch(err => console.log(err));
+//     })
+//     .catch(err => console.log(err));
 
 server.listen(3000);
