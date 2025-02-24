@@ -28,14 +28,14 @@ const { rm } = require('fs');
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: "http://localhost",
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 });
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: "http://localhost",
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
@@ -48,7 +48,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 // 靜態資源服務
-app.use('/daily_file', express.static(path.join(__dirname, 'daily_file')));
+app.use('/api/daily_file', express.static(path.join(__dirname, 'daily_file')));
 console.log('Static file directory:', path.join(__dirname, 'daily_file'));
 
 
@@ -552,17 +552,17 @@ app.post('/api/upload', upload.array('files', 10), (req, res) => {
 });
 
 //api routes
-app.use('/users', require('./routes/user'));
-app.use('/projects', require('./routes/project'))
-app.use('/kanbans', require('./routes/kanban'))
-app.use('/ideaWall', require('./routes/ideaWall'))
-app.use('/node', require('./routes/node'))
-app.use('/daily', require('./routes/daily'))
-app.use('/submit', require('./routes/submit'))
-app.use('/stage', require('./routes/stage'))
-app.use('/chatroom', require('./routes/chatroom'))
-app.use('/question', require('./routes/question'))
-app.use('/announcements', require('./routes/announcement'));
+app.use('/api/users', require('./routes/user'));
+app.use('/api/projects', require('./routes/project'))
+app.use('/api/kanbans', require('./routes/kanban'))
+app.use('/api/ideaWall', require('./routes/ideaWall'))
+app.use('/api/node', require('./routes/node'))
+app.use('/api/daily', require('./routes/daily'))
+app.use('/api/submit', require('./routes/submit'))
+app.use('/api/stage', require('./routes/stage'))
+app.use('/api/chatroom', require('./routes/chatroom'))
+app.use('/api/question', require('./routes/question'))
+app.use('/api/announcements', require('./routes/announcement'));
 // app.use('/rag_message', require('./routes/rag_message'));
 
 //error handling

@@ -3,7 +3,7 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const dailyApi = axios.create({
-    baseURL: "http://localhost:3000/daily",
+    baseURL: "http://localhost/api/daily",
     headers:{
         "Content-Type": "multipart/form-data"
     },
@@ -29,7 +29,7 @@ export const createPersonalDaily = async (data) => {
 
 // 修改個人日報
 export const updatePersonalDaily = async (id, data) => {
-    console.log(`發送請求: PUT http://localhost:3000/daily/${id}`, data);
+    console.log(`發送請求: PUT http://localhost/api/daily/${id}`, data);
     const response = await dailyApi.put(`/${id}`, data, {
         headers: { "Content-Type": "application/json" }, // 確保是 JSON
     });
