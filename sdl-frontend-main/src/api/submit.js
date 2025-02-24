@@ -2,14 +2,14 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const submitApi = axios.create({
-    baseURL: "http://localhost:3000/submit",
+    baseURL: "http://localhost/api/submit",
     headers:{
         "Content-Type":" multipart/form-data"
     },
 })
 
 const getsubmitApi = axios.create({
-    baseURL: "http://localhost:3000/submit",
+    baseURL: "http://localhost/api/submit",
     headers:{
         "Content-Type":" application/json"
     },
