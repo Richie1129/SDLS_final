@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const ragApi = axios.create({
-    baseURL: "http://localhost/api/rag_message",
+    baseURL: "http://140.115.126.45/api/rag_message",
     headers: {
         "Content-Type": "application/json"
     },

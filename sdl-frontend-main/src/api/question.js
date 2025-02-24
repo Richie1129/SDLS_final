@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const questionApi = axios.create({
-    baseURL: "http://localhost/api/question",
+    baseURL: "http://140.115.126.45/api/question",
     headers: {
         "Content-Type": " application/json",
     },

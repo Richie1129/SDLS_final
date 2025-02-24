@@ -76,7 +76,7 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('http://localhost/api/upload', formData, {
+      const response = await axios.post('http://140.115.126.45/api/upload', formData, {
           headers: {
           'Content-Type': 'multipart/form-data',
           },
@@ -87,7 +87,7 @@ function Carditem({ data, index, columnIndex }) {
       );
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `http://localhost/api${file.url}`);
+        .map((file) => `http://140.115.126.45/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,

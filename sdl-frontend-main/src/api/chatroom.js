@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const chatroomApi = axios.create({
-    baseURL: "http://localhost/api/chatroom",
+    baseURL: "http://140.115.126.45/api/chatroom",
     headers: {
         "Content-Type": "application/json"
     },
