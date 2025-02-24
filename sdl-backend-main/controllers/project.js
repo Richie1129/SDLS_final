@@ -470,6 +470,27 @@ exports.updateProject = async (req, res) => {
     }
 };
 
+exports.deleteProject = async (req, res) => {
+    const projectId = req.params.projectId;
+
+    try {
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "專案不存在！" });
+        }
+
+        // 刪除相關數據，如 user_project 連結
+        await User_project.destroy({ where: { projectId } });
+        await Kanban.destroy({ where: { projectId } });
+        await Project.destroy({ where: { id: projectId } });
+
+        return res.status(200).json({ message: "專案刪除成功！" });
+    } catch (error) {
+        console.error("刪除專案錯誤:", error);
+        res.status(500).json({ message: "無法刪除專案！" });
+    }
+};
+
 // exports.inviteForProject = async( req, res) => {
 //     const referral_Code = req.body.referral_Code;
 //     const userId = req.body.userId;

@@ -8,7 +8,7 @@ import { FaSortDown } from "react-icons/fa";
 import { BsBoxArrowInRight } from "react-icons/bs";
 import Loader from '../../components/Loader';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { createProject, getAllProject, inviteForProject, getProjectsByMentor, updateProject } from '../../api/project';
+import { createProject, getAllProject, inviteForProject, getProjectsByMentor, updateProject, deleteProject } from '../../api/project';
 import { getAllTeachers, getProjectUser } from '../../api/users';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -363,6 +363,40 @@ useEffect(() => {
   const errorReferralCodeNotify = (toastContent) => toast.error(toastContent);
   const sucesssReferralCodeNotify = (toastContent) => toast.success(toastContent);
 
+  const { mutate: deleteMutate } = useMutation(deleteProject, {
+    onSuccess: (res) => {
+        queryClient.invalidateQueries("projectDatas");
+        Swal.fire({
+            icon: "success",
+            title: "成功",
+            text: res.message,
+        });
+    },
+    onError: (error) => {
+        Swal.fire({
+            icon: "error",
+            title: "失敗",
+            text: error.response?.data?.message || "刪除失敗！",
+        });
+    },
+});
+
+const handleDeleteProject = (projectId) => {
+    Swal.fire({
+        title: "確定要刪除這個專案嗎？",
+        text: "刪除後將無法恢復！",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "是，刪除！",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            deleteMutate(projectId);
+        }
+    });
+};
+
   function formatRelativeTime(date) {
     const now = new Date();
     const diffInSeconds = (now - new Date(date)) / 1000;
@@ -491,7 +525,8 @@ useEffect(() => {
                       className="mt-2 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
                       編輯活動
                     </button>
-                    <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動</button>
+                    <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動
+                    </button>
                   </div>
                 ))}
               </div>
@@ -771,12 +806,23 @@ useEffect(() => {
                         <div className='bg-[#5BA491] h-2.5 rounded-full transition-all duration-300 ease-in-out' style={{ width: `${calculateProgress(projectItem.currentStage, projectItem.currentSubStage)}%` }}></div>
                       </div>
                     </ProgressTooltip>
-                    <button 
-                      onClick={() => handleEditProject(projectItem)} 
-                      className="mt-2 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
-                      編輯活動
-                    </button>
-                    <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動</button>
+                    <div className='flex justify-between gap-2 mt-2'>
+                      <button 
+                        onClick={() => handleEditProject(projectItem)} 
+                        className="flex-1 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
+                        編輯活動
+                      </button>
+                      <button 
+                        className='flex-1 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' 
+                        onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>
+                        查看活動
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteProject(projectItem.id)} 
+                        className="flex-1 bg-[#FF0000]/80 text-white rounded-lg px-4 py-2 transition duration-200 ease-in-out font-semibold">
+                        刪除活動
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

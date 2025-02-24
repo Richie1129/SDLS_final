@@ -9,6 +9,7 @@ router.get('/mentor/:mentor', controller.getProjectsByMentor);
 router.post('/', controller.createProject);
 router.post('/referral', controller.inviteForProject)
 router.put("/:projectId", controller.updateProject);
+router.delete("/:projectId", controller.deleteProject);
 
 // router.put('/:projectId', controller.updateProject);
 // router.delete('/:projectId', controller.deleteProject);
