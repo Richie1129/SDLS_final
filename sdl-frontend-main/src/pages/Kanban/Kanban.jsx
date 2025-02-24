@@ -28,9 +28,8 @@ export default function Kanban() {
   const navigate = useNavigate();
   const [showAddGroupInput, setShowAddGroupInput] = useState(false); // 新增狀態
   const [newGroupName, setNewGroupName] = useState('');
-  const currentStage = localStorage.getItem("currentStage");
-  const currentSubStage = localStorage.getItem("currentSubStage");
-
+  const [currentStage, setCurrentStage] = useState(() => localStorage.getItem("currentStage"));
+  const [currentSubStage, setCurrentSubStage] = useState(() => localStorage.getItem("currentSubStage"));
 
   const {
     isLoading: kanbanIsLoading,
@@ -56,24 +55,6 @@ export default function Kanban() {
       // socket.off('refreshKanban');
     };
   }, [socket, queryClient]);
-
-  const getSubStageQuery = useQuery("getSubStage", () => getSubStage({
-    projectId: projectId,
-    currentStage: localStorage.getItem("currentStage"),
-    currentSubStage: localStorage.getItem("currentSubStage")
-  }),
-    {
-      onSuccess: (data) => {
-        setStageInfo(prev => ({
-          ...prev,
-          ...data,
-          currentStage: localStorage.getItem("currentStage"),
-          currentSubStage: localStorage.getItem("currentSubStage")
-        }));
-      },
-      enabled: !!localStorage.getItem("currentStage")
-    }
-  );
 
 
   useEffect(() => {
@@ -109,11 +90,11 @@ export default function Kanban() {
     };
   }, [socket, projectId]);
 
-  useEffect(() => {
-    if (!currentStage || !currentSubStage) {
-      navigate(0);
-    }
-  }, [currentStage, currentSubStage, navigate])
+  // useEffect(() => {
+  //   if (!currentStage || !currentSubStage) {
+  //     navigate(0);
+  //   }
+  // }, [currentStage, currentSubStage, navigate])
 
 
   const onDragEnd = useCallback((result) => {
