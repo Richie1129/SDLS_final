@@ -23,19 +23,20 @@ const Rag_message = require('./models/rag_message')
 const Project = require('./models/project')
 const QuestionMessage = require('./models/question_message')
 const Announcement = require('./models/announcement');
+const { request } = require('https');
 
 const { rm } = require('fs');
 
 const io = new Server(server, {
     cors: {
-        origin: "http://sdls.sdlswuret.systems",
+        origin: "https://sdls.sdlswuret.systems",
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 });
 
 app.use(cors({
-    origin: "http://sdls.sdlswuret.systems",
+    origin: "https://sdls.sdlswuret.systems",
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));

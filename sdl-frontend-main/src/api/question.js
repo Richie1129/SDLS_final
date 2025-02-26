@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const questionApi = axios.create({
-    baseURL: "http://sdls.sdlswuret.systems/api/question",
+    baseURL: "https://sdls.sdlswuret.systems/api/question",
     headers: {
         "Content-Type": " application/json",
     },
