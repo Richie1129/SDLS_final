@@ -2,7 +2,7 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const ideaWallApi = axios.create({
-    baseURL: "http://140.115.126.45/api/ideaWall",
+    baseURL: "http://sdls.sdlswuret.systems/api/ideaWall",
     headers:{
         "Content-Type":" application/json"
     },

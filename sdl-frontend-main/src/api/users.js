@@ -3,7 +3,7 @@ import axios from "axios";
 axios.defaults.withCredentials = true; 
 //login & register
 const usersApi = axios.create({
-    baseURL: "http://140.115.126.45/api/users",
+    baseURL: "http://sdls.sdlswuret.systems/api/users",
     headers:{
         "Content-Type":" application/json"
     },
