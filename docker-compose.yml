@@ -36,7 +36,7 @@ services:
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_USER=postgres
-      - PG_PASSWORD=postgres
+      - PG_PASSWORD=ytwu35415
       - PG_NAME=sdls_fullstack_postgres1
     volumes:
       - "./sdl-backend-main:/sdl-backend-main"
