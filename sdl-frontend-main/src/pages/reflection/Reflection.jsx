@@ -182,7 +182,59 @@ export default function Reflection() {
             errorNotify("更新失敗");
         }
     });
+
+    const { mutate: updateTeamDailyMutate } = useMutation(({ id, ...data }) => updateTeamDaily(id, data), {
+        onSuccess: (res) => {
+            console.log("更新成功:", res);
+            queryClient.invalidateQueries("teamDaily");
+            sucesssNotify("小組日誌更新成功");
+        },
+        onError: (error) => {
+            console.log("更新失敗:", error);
+            errorNotify("小組日誌更新失敗");
+        }
+    });          
     
+    const handleEditTeamClick = (item) => {
+    if (!item) {
+        console.error("選擇的日誌為 undefined，請確認 teamDaily 是否有資料");
+        return;
+    }
+
+    console.log("編輯的小組日誌:", item); // 確保 `item` 不是 `undefined`
+    setTitle(item.title || ""); // 避免 `undefined` 錯誤
+    setContent(item.content || "");
+    setAttachFile(item.fileData || null);
+    setEditingId(item.id);
+    setTeamDailyModalOpen(true);
+};
+    
+    const handleCreateOrUpdateTeamDaily = (e) => {
+        e.preventDefault();
+    
+        if (editingId) {
+            handleSaveTeamEdit();
+            return;
+        }
+    
+        if (title.trim() !== "" && content.trim() !== "") {
+            const formData = new FormData();
+            formData.append('projectId', projectId);
+            formData.append('creator', localStorage.getItem("username"));
+            if (attachFile) {
+                for (let i = 0; i < attachFile.length; i++) {
+                    formData.append("attachFile", attachFile[i]);
+                }
+            }
+            for (let key in dailyData) {
+                formData.append(key, dailyData[key]);
+            }
+            teamDailyMutate(formData);
+            setTeamDailyModalOpen(false);
+        } else {
+            toast.error("標題及內容請填寫完整!");
+        }
+    };    
 
     const handleSaveEdit = () => {
         if (!editingId) {
@@ -209,8 +261,32 @@ export default function Reflection() {
             }
         });
     };
+
+    const handleSaveTeamEdit = () => {
+        if (!editingId) {
+            toast.error("未選擇日誌");
+            return;
+        }
     
+        const updatedData = {
+            id: Number(editingId),  // 確保 id 是數字
+            title: title,
+            content: content
+        };
     
+        console.log("更新日誌:", updatedData);
+        updateTeamDailyMutate(updatedData, {
+            onSuccess: () => {
+                setEditingId(null);
+                setTeamDailyModalOpen(false);
+                sucesssNotify("小組日誌更新成功");
+            },
+            onError: (error) => {
+                console.log(error);
+                errorNotify("小組日誌更新失敗");
+            }
+        });        
+    };
     
     const handleChange = e => {
         const { name, value } = e.target;
@@ -504,6 +580,12 @@ export default function Reflection() {
                                                                         <div className='flex justify-between text-base font-bold'>
                                                                             <p className='text-customgreen'>建立日期: {new Date(item.createdAt).toLocaleDateString()}</p>
                                                                             <p className='text-gray-500'>建立者: {item.creator}</p>
+                                                                            <button
+                                                                                className="mt-2 bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600 transition-colors duration-300"
+                                                                                onClick={() => handleEditTeamClick(item)}
+                                                                            >
+                                                                                編輯
+                                                                            </button>
                                                                         </div>
                                                                     </div>
 
@@ -671,12 +753,14 @@ export default function Reflection() {
                             className="mx-auto w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2">
                             取消
                         </button>
-                        <button onClick={e => {
-                            handleCreateTeamDaily(e);
-                        }}
+                        <button
+                            onClick={e => {
+                                editingId ? handleSaveTeamEdit() : handleCreateOrUpdateTeamDaily(e);
+                            }}
                             type="submit"
-                            className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white">
-                            儲存
+                            className="mx-auto w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white"
+                        >
+                            {editingId ? "更新" : "儲存"}
                         </button>
                     </div>
                 </div>

@@ -23,6 +23,8 @@ const Daily_team = sequelize.define('daily_team', {
         type: DataTypes.TEXT,
         allowNull:false,
     }
+}, {
+    tableName: 'daily_teams' // 👈 加上這行
 });
 
 module.exports = Daily_team;

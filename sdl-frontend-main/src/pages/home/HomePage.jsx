@@ -463,7 +463,7 @@ const handleDeleteProject = (projectId) => {
     return (
       <div className='min-w-full min-h-screen bg-gray-100 overflow-auto scrollbar-hidden'>
         <TopBar />
-        <div className='flex flex-col my-10  md:px-10 lg:px-10 2xl:px-80 py-10 w-full items-center'>
+        <div className='flex flex-col my-10 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-20 2xl:px-40 py-10 w-full items-center'>
           <div className='flex flex-col w-full '>
             <Accordion
               index={0}
@@ -520,13 +520,15 @@ const handleDeleteProject = (projectId) => {
                         <div className='bg-[#5BA491] h-2.5 rounded-full transition-all duration-300 ease-in-out' style={{ width: `${calculateProgress(projectItem.currentStage, projectItem.currentSubStage)}%` }}></div>
                       </div>
                     </ProgressTooltip>
-                    <button 
-                      onClick={() => handleEditProject(projectItem)} 
-                      className="mt-2 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
-                      編輯活動
-                    </button>
-                    <button className='mt-2 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動
-                    </button>
+                    <div className='flex justify-between gap-2 mt-2'>
+                      <button 
+                        onClick={() => handleEditProject(projectItem)} 
+                        className="flex-1 bg-customgreen text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold">
+                        編輯活動
+                      </button>
+                      <button className='flex-1 bg-[#5BA491] text-white rounded-lg px-4 py-2 hover:bg-[#5BA491]/80 transition duration-200 ease-in-out font-semibold' onClick={() => navigate(`/project/${projectItem.id}/kanban`)}>查看活動
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

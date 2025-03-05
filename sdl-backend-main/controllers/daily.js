@@ -186,3 +186,33 @@ exports.updatePersonalDaily = async (req, res) => {
         return res.status(500).json({ message: "更新失敗" });
     }
 };
+
+exports.updateTeamDaily = async (req, res) => {
+    console.log("收到的 params:", req.params);
+    console.log("收到的請求:", req.body);
+    
+    const { id } = req.params;
+    const { title, content } = req.body;
+    
+    try {
+        const daily = await Daily_team.findOne({ where: { id } });
+        if (!daily) {
+            return res.status(404).json({ message: "小組日誌未找到" });
+        }
+
+        let updatedData = { title, content };
+        
+        if (req.files && req.files.length > 0) {
+            const fs = require('fs').promises;
+            const fileData = await fs.readFile(req.files[0].path);
+            updatedData.fileData = fileData;
+            updatedData.filename = req.files[0].originalname;
+        }
+
+        await daily.update(updatedData);
+        return res.status(200).json({ message: "更新成功", data: daily });
+    } catch (error) {
+        console.error("更新錯誤:", error);
+        return res.status(500).json({ message: "更新失敗" });
+    }
+};

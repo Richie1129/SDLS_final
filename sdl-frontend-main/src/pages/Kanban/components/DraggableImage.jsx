@@ -261,8 +261,8 @@ const DraggableImage = () => {
             position: "fixed", // 固定位置
             left: `${position.x - 350}px`, // 讓對話框顯示在圖片左側
             top: `${position.y - 200}px`, // 讓對話框與圖片對齊
-            width: "320px", // 設定對話框寬度
-            height: "450px", // 設定對話框高度
+            width: "350px", // 設定對話框寬度
+            height: "500px", // 設定對話框高度
             backgroundColor: "white", // 設定背景顏色
             borderRadius: "10px", // 設定圓角
             boxShadow: "0px 4px 10px rgba(0,0,0,0.2)", // 設定陰影效果

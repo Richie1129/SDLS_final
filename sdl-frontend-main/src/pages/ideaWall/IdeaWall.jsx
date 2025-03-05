@@ -192,15 +192,19 @@ export default function IdeaWall() {
     };
 
     const handleCreateSubmit = (e) => {
-        e.preventDefault()
+        e.preventDefault();
         if (title.trim() !== "" && content.trim() !== "") {
             setCreateNodeModalOpen(false);
-            socket.emit('nodeCreate', nodeData);
-            setBuildOnId("");
+            socket.emit('nodeCreate', {
+                ...nodeData,
+                from_id: buildOnNodeId, // 設定來源節點 ID（如果是延伸想法）
+            });
+            setBuildOnId(""); // 清空，以免影響其他新建節點
         } else {
             toast.error("標題及內容請填寫完整!");
         }
-    }
+    };
+    
     const handleUpdateSubmit = (e) => {
         e.preventDefault()
         if (selectNodeInfo.title.trim() !== "" && selectNodeInfo.content.trim() !== "") {
@@ -328,6 +332,19 @@ export default function IdeaWall() {
                                         刪除
                                     </button>
                                     <div className='flex'>
+                                        <button
+                                            onClick={() => {
+                                                setBuildOnId(selectNodeInfo.id); // 設定要延伸的節點 ID
+                                                setNodeData({}); // 重置 nodeData
+                                                setTitle("");
+                                                setContent("");
+                                                setUpdateNodeModalOpen(false);
+                                                setCreateNodeModalOpen(true); // 開啟建立節點的 modal
+                                            }}
+                                            className="w-32 h-7 bg-blue-500 rounded font-bold text-sm sm:text-base text-white"
+                                        >
+                                            延伸想法
+                                        </button>
                                         <button onClick={() => setUpdateNodeModalOpen(false)} className="w-16 h-7  bg-customgray rounded font-bold text-sm sm:text-bas text-black/60 mr-2" >
                                             取消
                                         </button>
@@ -341,9 +358,40 @@ export default function IdeaWall() {
                                     <button onClick={() => setUpdateNodeModalOpen(false)} className="mx-auto w-1/3 h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-base text-white mr-2" >
                                         關閉
                                     </button>
+                                    <div className='flex justify-start'>
+                                        <button
+                                            onClick={() => {
+                                                setBuildOnId(selectNodeInfo.id); // 設定要延伸的節點 ID
+                                                setNodeData({}); // 重置 nodeData
+                                                setTitle("");
+                                                setContent("");
+                                                setUpdateNodeModalOpen(false);
+                                                setCreateNodeModalOpen(true); // 開啟建立節點的 modal
+                                            }}
+                                            className="w-32 h-7 bg-blue-500 rounded font-bold text-sm sm:text-base text-white"
+                                        >
+                                            延伸想法
+                                        </button>
+                                    </div>
                                 </div>
                             )
                     }
+                    {/* 新增 "延伸想法" 按鈕 */}
+                    {/* <div className='flex justify-center m-2'>
+                        <button
+                            onClick={() => {
+                                setBuildOnId(selectNodeInfo.id); // 設定要延伸的節點 ID
+                                setNodeData({}); // 重置 nodeData
+                                setTitle("");
+                                setContent("");
+                                setUpdateNodeModalOpen(false);
+                                setCreateNodeModalOpen(true); // 開啟建立節點的 modal
+                            }}
+                            className="w-32 h-7 bg-blue-500 rounded font-bold text-sm sm:text-base text-white"
+                        >
+                            延伸想法
+                        </button>
+                    </div> */}
                 </Modal>
             }
             <Timer />

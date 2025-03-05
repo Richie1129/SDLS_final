@@ -51,6 +51,8 @@ export const createTeamDaily = async (config) => {
 
 // 修改團隊日報
 export const updateTeamDaily = async (id, data) => {
-    const response = await dailyApi.put(`/team/${id}`, data);
+    const response = await dailyApi.put(`/team/${id}`, data, {
+        headers: { "Content-Type": "application/json" },
+    });
     return response.data;
-}
+};
