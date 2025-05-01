@@ -286,7 +286,7 @@ export default function Protfolio() {
                                                                 {key}
                                                             </label>
                                                             <textarea
-                                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                                                className="w-full rounded-md border-2 border-gray-400 bg-white text-base p-3 shadow-md transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500 hover:border-teal-400"
                                                                 rows={4}
                                                                 value={value}
                                                                 onChange={(e) => handleChange(key, e.target.value)}

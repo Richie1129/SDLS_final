@@ -195,21 +195,28 @@ io.on("connection", (socket) => {
     //update card
     ensureListener(socket, "cardUpdated", async (data) => {
         const { cardData, index, columnIndex, kanbanData, projectId } = data;
-        const updateTask = await Task.update(cardData, {
-            where: {
-                id: cardData.id
-            }
-        });
-        await Project.update({
-            id: projectId
-        }, {
-            where: {
+        try {
+            const updateTask = await Task.update({
+                ...cardData,
+                files: cardData.files || [], // 確保 files 欄位存在
+                images: cardData.images || [] // 確保 images 欄位存在
+            }, {
+                where: {
+                    id: cardData.id
+                }
+            });
+            await Project.update({
                 id: projectId
-            }
-        });
-        // io.sockets.emit("taskItem", updateTask);
-        io.to(projectId).emit("taskItem", updateTask);
-    })
+            }, {
+                where: {
+                    id: projectId
+                }
+            });
+            io.to(projectId).emit("taskItem", updateTask);
+        } catch (error) {
+            console.error("更新卡片失敗:", error);
+        }
+    });
     //Delete card
     ensureListener(socket, "cardDelete", async (data) => {
         const { cardData, index, columnIndex, kanbanData, projectId } = data;

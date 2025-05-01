@@ -31,6 +31,11 @@ const Task = sequelize.define('task', {
         type: DataTypes.ARRAY(DataTypes.TEXT),
         defaultValue: [],
         allowNull: true,
+    },
+    files: {
+        type: DataTypes.ARRAY(DataTypes.JSONB),
+        defaultValue: [],
+        allowNull: true,
     },    
 });
 

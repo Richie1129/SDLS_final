@@ -288,18 +288,24 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('https://science.lazyinwork.com/api/upload', formData, {
+      const response = await axios.post('https://science2.lazyinwork.com/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      const uploadedFiles = response.data.files.filter(
-        (file) => !file.mimeType.startsWith("image/")
-      );
+      // For non-image files, keep the complete file objects with full URL
+      const uploadedFiles = response.data.files
+        .filter((file) => !file.mimeType.startsWith("image/"))
+        .map((file) => ({
+          url: `https://science2.lazyinwork.com/api${file.url}`,
+          originalName: file.originalName,
+          mimeType: file.mimeType
+        }));
+      
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `https://science.lazyinwork.com/api${file.url}`);
+        .map((file) => `https://science2.lazyinwork.com/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,
@@ -320,7 +326,7 @@ function Carditem({ data, index, columnIndex }) {
 
   const handleFileDownload = async (file) => {
     try {
-      const response = await axios.get(`https://science.lazyinwork.com/api${file.url}`, {
+      const response = await axios.get(`https://science2.lazyinwork.com/api${file.url}`, {
         responseType: 'blob'
       });
       FileDownload(response.data, file.originalName);
@@ -351,7 +357,13 @@ function Carditem({ data, index, columnIndex }) {
 
   const cardHandleSubmit = () => {
     if (cardData.title.trim() !== "") {
-      socket.emit("cardUpdated", { cardData, columnIndex, index, projectId });
+      // 確保 files 和 images 是陣列
+      const updatedCardData = {
+        ...cardData,
+        files: Array.isArray(cardData.files) ? cardData.files : [],
+        images: Array.isArray(cardData.images) ? cardData.images : []
+      };
+      socket.emit("cardUpdated", { cardData: updatedCardData, columnIndex, index, projectId });
       setOpen(false);
     } else {
       toast.error("請填寫卡片標題!");
