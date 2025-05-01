@@ -296,14 +296,16 @@ export default function Protfolio() {
                                                 </div>
 
                                                 {/* File Section */}
-                                                {modalData.fileData && (
-                                                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                                            <div>
-                                                                <h3 className="text-sm font-medium text-gray-700">附加檔案</h3>
+                                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                                        <div>
+                                                            <h3 className="text-sm font-medium text-gray-700">附加檔案</h3>
+                                                            {modalData.fileName && (
                                                                 <p className="text-sm text-gray-500 mt-1">{modalData.fileName}</p>
-                                                            </div>
-                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row gap-2">
+                                                            {modalData.fileData && (
                                                                 <button
                                                                     onClick={() => {
                                                                         if (modalData.fileData && modalData.fileData.data && modalData.fileName) {
@@ -317,19 +319,19 @@ export default function Protfolio() {
                                                                     <AiOutlineCloudDownload className="mr-2" />
                                                                     下載
                                                                 </button>
-                                                                <label className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600 cursor-pointer">
-                                                                    <AiOutlineUpload className="mr-2" />
-                                                                    重新上傳
-                                                                    <input
-                                                                        type="file"
-                                                                        className="hidden"
-                                                                        onChange={handleFileChange}
-                                                                    />
-                                                                </label>
-                                                            </div>
+                                                            )}
+                                                            <label className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600 cursor-pointer">
+                                                                <AiOutlineUpload className="mr-2" />
+                                                                {modalData.fileData ? "重新上傳" : "上傳檔案"}
+                                                                <input
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    onChange={handleFileChange}
+                                                                />
+                                                            </label>
                                                         </div>
                                                     </div>
-                                                )}
+                                                </div>
 
                                                 {/* Action Buttons */}
                                                 <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
