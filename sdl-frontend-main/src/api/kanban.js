@@ -2,7 +2,7 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const kanbanApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/kanbans",
+    baseURL: "https://science.lazyinwork.com/api/kanbans",
     headers:{
         "Content-Type":" application/json"
     },

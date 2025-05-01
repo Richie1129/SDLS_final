@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const projectApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/projects",
+    baseURL: "https://science.lazyinwork.com/api/projects",
     headers:{
         "Content-Type":" application/json",
     },

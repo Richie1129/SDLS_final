@@ -2,14 +2,14 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const submitApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/submit",
+    baseURL: "https://science.lazyinwork.com/api/submit",
     headers:{
         "Content-Type":" multipart/form-data"
     },
 })
 
 const getsubmitApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/submit",
+    baseURL: "https://science.lazyinwork.com/api/submit",
     headers:{
         "Content-Type":" application/json"
     },

@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const ragApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/rag_message",
+    baseURL: "https://science.lazyinwork.com/api/rag_message",
     headers: {
         "Content-Type": "application/json"
     },

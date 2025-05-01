@@ -1,45 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { AiTwotoneFolderAdd } from "react-icons/ai";
+import React, { useState, useEffect, useContext } from 'react';
+import { AiTwotoneFolderAdd, AiOutlineCloudDownload, AiOutlineUpload } from "react-icons/ai";
 import { GrFormClose } from "react-icons/gr";
 import { useQuery, useQueryClient } from 'react-query';
 import { getAllSubmit, updateSubmitTask, updateSubmitAttachment } from '../../api/submit';
 import { useParams } from 'react-router-dom';
 import Loader from '../../components/Loader';
-import FolderModal from './components/folderModal';
 import dateFormat from 'dateformat';
 import ProtfoliioIcon from "../../assets/AnimationProtfoliio.json";
 import Lottie from "lottie-react";
 import { socket } from '../../utils/socket';
-import { AiOutlineCloudDownload, AiOutlineUpload } from "react-icons/ai";
 import FileDownload from 'js-file-download';
 import { BiSave } from "react-icons/bi";
 import Swal from "sweetalert2";
+import { Context } from '../../context/context';
 
 export default function Protfolio() {
+    const { currentStageIndex } = useContext(Context);
     const [stagePortfolio, setStagePortfolio] = useState([]);
+    const [portfolioItemsWithTitles, setPortfolioItemsWithTitles] = useState([]);
     const [folderModalOpen, setFolderModalOpen] = useState(false);
     const [modalData, setModalData] = useState({});
     const { projectId } = useParams();
-    const [activeItemId, setActiveItemId] = useState(null); // 新增狀態以追蹤當前被點擊的項目 ID
+    const [activeItemId, setActiveItemId] = useState(null);
     const [showEmptyMessage, setShowEmptyMessage] = useState(false);
-    let portfolioItemsWithTitles = [];
-    // 在 component 內部
-    const [editableContent, setEditableContent] = useState(""); 
+    const [editableContent, setEditableContent] = useState("");
     const queryClient = useQueryClient();
     
     const {
         isLoading,
         isError,
         data: portfolioData
-      } = useQuery("protfolioDatas", () => getAllSubmit(
-          { params: { projectId: projectId } }),
-          {
-            onSuccess: (data) => {
-              setStagePortfolio(data);
-              setShowEmptyMessage(data.length === 0);
-            }
-          }
-      );
+    } = useQuery("protfolioDatas", () => getAllSubmit({ params: { projectId: projectId } }), {
+        onSuccess: (data) => {
+            setStagePortfolio(data);
+            setShowEmptyMessage(data.length === 0);
+        }
+    });
+
     useEffect(() => {
       const timer = setTimeout(() => {
         if (portfolioItemsWithTitles.length === 0 && !isLoading && !isError) {
@@ -110,18 +107,23 @@ export default function Protfolio() {
         "4-3": "撰寫研究結論"
     };
     const insertTitles = ["定標", "擇策", "監評", "調節"];
-    // 加入首行文字
-    stagePortfolio.forEach((item, index) => {
-        if (index % 3 === 0) {
-            // 每三個項目前插入一個文字物件，使用splice方法
-            const titleIndex = Math.floor(index / 3);
-            const title = insertTitles[titleIndex];
-            if (title) {
-                portfolioItemsWithTitles.push({ type: 'title', content: title });
-            }
+
+    useEffect(() => {
+        if (stagePortfolio.length > 0) {
+            const itemsWithTitles = [];
+            stagePortfolio.forEach((item, index) => {
+                if (index % 3 === 0) {
+                    const titleIndex = Math.floor(index / 3);
+                    const title = insertTitles[titleIndex];
+                    if (title) {
+                        itemsWithTitles.push({ type: 'title', content: title });
+                    }
+                }
+                itemsWithTitles.push({ type: 'item', content: item });
+            });
+            setPortfolioItemsWithTitles(itemsWithTitles);
         }
-        portfolioItemsWithTitles.push({ type: 'item', content: item });
-    });
+    }, [stagePortfolio]);
 
     const downloadFile = () => {
         if (modalData.fileData && modalData.fileData.data) {
@@ -163,159 +165,199 @@ export default function Protfolio() {
     }, [socket])
 
     return (
-        <div className='min-w-full min-h-screen h-screen'>
-            <div className='flex-grow'>
-                <div className='flex flex-col my-5 pl-20 pr-5 sm:px-20 py-16 w-full h-screen justify-start items-start'>
-                    {/* <h3 className='text-lg font-bold mb-4'>歷程檔案</h3> */}
-                    <div className=' flex flex-wrap justify-start items-center w-full mb-5 pr-80'>
-                        {
-                            isLoading ? <Loader /> :
-                                isError ? <p className=' font-bold text-2xl'>{isError.message}</p> :
-                                    // stagePortfolio.map(item => {
-                                    portfolioItemsWithTitles.length === 0 ? (
-                                        
-                                            showEmptyMessage && (
-                                              <div className="flex flex-col items-center justify-center w-full h-full my-5">
-                                                <Lottie className="w-96" animationData={ProtfoliioIcon} />
-                                                <p className="text-lg text-zinc-600 font-bold mt-2">目前還未新增歷程檔案，快和小組成員互相討論並記錄討論結果吧 !</p>
-                                              </div>
-                                            )
-                                          
-                                    ) : (
-
-                                        portfolioItemsWithTitles.map((item, index) => {
-                                            if (item.type === 'title') {
-                                                return (
-                                                    <React.Fragment key={`title-${index}`}>
-                                                        <div className="w-full mb-3">
-                                                            <h3 className="text-xl font-bold">{item.content}</h3>
-                                                        </div>
-                                                        <div className="w-full h-0.5 bg-[#5BA491] mb-3 mr-5"></div>
-                                                    </React.Fragment>
-                                                );
-                                            } else {
-                                                const { id, stage, createdAt } = item.content;
-                                                const description = stageDescriptions[stage];
-                                                if (!description) return null; // 如果stage不在stageDescriptions中，則不渲染
-
-
-                                                const isActive = id === activeItemId;
-                                                return (
-                                                    <div
-                                                        className={`flex mx-3 mb-3 transition duration-500 ease-in-out transform ${isActive ? 'scale-105 bg-[#487e6c]' : 'bg-[#5BA491]'} rounded-lg`}
-                                                        key={id}
-                                                        style={{
-                                                            minWidth: 'calc(33.333% - 2rem)', maxWidth: 'calc(33.333% - 2rem)'
-                                                        }}
-                                                    >
-                                                        <button
-                                                            className="inline-flex items-center justify-center w-full h-28  text-white  font-semibold rounded-lg p-5 mx-5 text-base flex-col"
-                                                            onClick={() => {
-                                                                setActiveItemId(id);
-                                                                setFolderModalOpen(true);
-                                                                setModalData(item.content);
-                                                                console.log(item);
-                                                            }}
-                                                        >
-                                                            <div className="flex items-center justify-center">
-                                                                <AiTwotoneFolderAdd size={30} className="mr-2" />
-                                                                {/* <span>{stage}</span> */}
-                                                                <span className="ml-2 text-lg">{description}</span>
-                                                            </div>
-                                                            <div className="mt-5 text-sm text-white">
-                                                                <span className='mr-2'>完成時間</span>
-                                                                {dateFormat(createdAt, "yyyy/mm/dd")}
-                                                            </div>
-                                                        </button>
-                                                    </div>
-                                                )
-                                            }
-                                        })
-                                    )
-                            // })
-                        }
-                    </div>
+        <div className="min-h-screen bg-gray-100">
+            <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+                    <h1 className="text-xl font-semibold text-gray-800">歷程檔案</h1>
                 </div>
             </div>
 
-            <div className={`w-[400px] h-[90vh] fixed right-0 top-16 bg-white shadow-lg transform ease-in-out duration-300 overflow-y-auto max-h-[90vh] ${folderModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <button onClick={() => setFolderModalOpen(false)} className="absolute top-1 right-1 rounded-lg bg-white hover:bg-slate-200">
-                    <GrFormClose className="w-6 h-6" />
-                </button>
-                <div className="flex flex-col justify-start items-center w-full p-4">
-                    <div className="text-center py-2">
-                        <h2 className="text-xl font-bold text-[#5BA491]">{stageDescriptions[modalData.stage]}</h2>
-                        <span className="text-sm text-gray-600">階段: {modalData.stage}</span>
-                    </div>
-                    {/* 依照 JSON 顯示多個 textarea */}
-                    {Object.entries(editableContent).map(([key, value], index) => (
-                        <div className="mt-3 p-4 bg-gray-100 rounded-lg w-full" key={index}>
-                            <span className="font-bold text-lg text-gray-700">{key}:</span>
-                            <textarea
-                                className="rounded outline-none ring-2 ring-customgreen w-full p-1 mt-2"
-                                rows={3}
-                                value={value}
-                                onChange={(e) => handleChange(key, e.target.value)}
-                            />
-                        </div>
-                    ))}
-
-                    {/* 儲存按鈕 */}
-                    <button
-                        className="mt-3 flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300"
-                        onClick={handleSave}
-                    >
-                        <BiSave size={32} className="text-white mr-1" />
-                        <span>儲存內容</span>
-                    </button>
-                    
-                    {modalData.fileData && (
-                        <>
-                            <div className="mt-3 p-4 bg-gray-100 rounded-lg w-full">
-                                <span className="font-bold text-lg text-gray-700">附加檔案:</span>
-                                <p className="text-gray-600">{modalData.fileName}</p>
+            <div className="pt-16 pl-16 h-screen overflow-hidden">
+                <div className="h-full overflow-y-auto">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {isLoading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <Loader />
                             </div>
-                            <div className="flex space-x-2">
-                            <button
-                                className="mt-3 inline-flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300 ease-in-out"
-                                onClick={() => {
-                                    if (modalData.fileData && modalData.fileData.data && modalData.fileName) {
-                                        console.log("modalData", modalData)
-                                        // // 將 Buffer 轉換為 Uint8Array
-                                        // const buffer = new Uint8Array(modalData.fileData.data);
-                                        // // 創建 Blob 對象
-                                        // const blob = new Blob([buffer], { type: modalData.mimetype });
+                        ) : isError ? (
+                            <div className="text-center py-12">
+                                <p className="text-red-500 font-medium">{isError.message}</p>
+                            </div>
+                        ) : portfolioItemsWithTitles.length === 0 ? (
+                            showEmptyMessage && (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <Lottie className="w-64 sm:w-96" animationData={ProtfoliioIcon} />
+                                    <p className="mt-6 text-lg text-gray-600 text-center max-w-md">
+                                        目前還未新增歷程檔案，快和小組成員互相討論並記錄討論結果吧！
+                                    </p>
+                                </div>
+                            )
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                {/* Timeline Navigation */}
+                                <div className="lg:col-span-1">
+                                    <div className="bg-white rounded-lg shadow-sm p-5 sticky top-24 border border-gray-200">
+                                        <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                                            <span className="h-6 w-1.5 bg-teal-500 rounded-full mr-3"></span>
+                                            階段導航
+                                        </h2>
+                                        <nav className="space-y-5">
+                                            {insertTitles.map((title, index) => (
+                                                <div key={index} className="relative">
+                                                    <div className="flex items-center mb-3">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                                                            index < parseInt(currentStageIndex) - 1 ? 'bg-green-500' : 
+                                                            index === parseInt(currentStageIndex) - 1 ? 'bg-teal-500' : 
+                                                            'bg-gray-200'
+                                                        }`}>
+                                                            {index < parseInt(currentStageIndex) - 1 && 
+                                                                <span className="text-white text-xs">✓</span>
+                                                            }
+                                                        </div>
+                                                        <h3 className={`ml-2 font-medium ${
+                                                            index < parseInt(currentStageIndex) ? 'text-gray-900' : 'text-gray-500'
+                                                        }`}>{title}</h3>
+                                                    </div>
+                                                    
+                                                    {index < insertTitles.length - 1 && (
+                                                        <div className="absolute left-2 top-4 w-[1px] h-full bg-gray-200"></div>
+                                                    )}
+                                                    
+                                                    <div className="pl-7 space-y-2">
+                                                        {stagePortfolio
+                                                            .filter(item => Math.floor(item.stage.split('-')[0]) === index + 1)
+                                                            .map(item => (
+                                                                <button
+                                                                    key={item.id}
+                                                                    onClick={() => {
+                                                                        setActiveItemId(item.id);
+                                                                        setFolderModalOpen(true);
+                                                                        setModalData(item);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors relative ${
+                                                                        activeItemId === item.id
+                                                                            ? 'bg-teal-500 text-white shadow-sm'
+                                                                            : 'text-gray-600 hover:bg-gray-50 hover:shadow-sm'
+                                                                    }`}
+                                                                >
+                                                                    {activeItemId === item.id && (
+                                                                        <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white"></span>
+                                                                    )}
+                                                                    {stageDescriptions[item.stage]}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </nav>
+                                    </div>
+                                </div>
 
+                                {/* Content Area */}
+                                <div className="lg:col-span-3">
+                                    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                                        {activeItemId && (
+                                            <div className="p-6">
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div>
+                                                        <h2 className="text-xl font-bold text-gray-900">
+                                                            {stageDescriptions[modalData.stage]}
+                                                        </h2>
+                                                        <p className="text-sm text-gray-500 mt-1">
+                                                            階段: {modalData.stage}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            setFolderModalOpen(false);
+                                                            setActiveItemId(null);
+                                                        }}
+                                                        className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                    >
+                                                        <GrFormClose size={24} />
+                                                    </button>
+                                                </div>
 
-                                        // 將 Buffer 轉換為 Uint8Array
-                                        const buffer = new Uint8Array(modalData.fileData.data);
-                                        // 創建 Blob 對象
-                                        const blob = new Blob([buffer], { type: "application/octet-stream" });
+                                                {/* Content Form */}
+                                                <div className="space-y-4">
+                                                    {Object.entries(editableContent).map(([key, value], index) => (
+                                                        <div key={index} className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">
+                                                                {key}
+                                                            </label>
+                                                            <textarea
+                                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                                                rows={4}
+                                                                value={value}
+                                                                onChange={(e) => handleChange(key, e.target.value)}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
 
-                                        // 觸發文件下載
-                                        FileDownload(blob, modalData.fileName);
-                                    }
-                                }}
-                            >
-                                <AiOutlineCloudDownload size={32} className="text-white mr-1" />
-                                <span>下載附件</span>
-                            </button>
-                            <label className="mt-3 inline-flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300 ease-in-out cursor-pointer">
-                            <AiOutlineUpload size={32} className="text-white mr-1" />
-                            <span>重新上傳</span>
-                            <input
-                                type="file"
-                                className="hidden"
-                                onChange={handleFileChange}
-                            />
-                        </label>
-                        </div>
-                        </>
-                    )}
-                    {isLoading && <Loader />}
-                    {isError && <p>載入錯誤</p>}
+                                                {/* File Section */}
+                                                {modalData.fileData && (
+                                                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                                            <div>
+                                                                <h3 className="text-sm font-medium text-gray-700">附加檔案</h3>
+                                                                <p className="text-sm text-gray-500 mt-1">{modalData.fileName}</p>
+                                                            </div>
+                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (modalData.fileData && modalData.fileData.data && modalData.fileName) {
+                                                                            const buffer = new Uint8Array(modalData.fileData.data);
+                                                                            const blob = new Blob([buffer], { type: "application/octet-stream" });
+                                                                            FileDownload(blob, modalData.fileName);
+                                                                        }
+                                                                    }}
+                                                                    className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
+                                                                >
+                                                                    <AiOutlineCloudDownload className="mr-2" />
+                                                                    下載
+                                                                </button>
+                                                                <label className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600 cursor-pointer">
+                                                                    <AiOutlineUpload className="mr-2" />
+                                                                    重新上傳
+                                                                    <input
+                                                                        type="file"
+                                                                        className="hidden"
+                                                                        onChange={handleFileChange}
+                                                                    />
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Action Buttons */}
+                                                <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            setFolderModalOpen(false);
+                                                            setActiveItemId(null);
+                                                        }}
+                                                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                                    >
+                                                        取消
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSave}
+                                                        className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600"
+                                                    >
+                                                        儲存
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
-    )
+    );
 }

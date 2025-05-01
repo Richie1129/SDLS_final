@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const chatroomApi = axios.create({
-    baseURL: "https://science2.lazyinwork.com/api/chatroom",
+    baseURL: "https://science.lazyinwork.com/api/chatroom",
     headers: {
         "Content-Type": "application/json"
     },

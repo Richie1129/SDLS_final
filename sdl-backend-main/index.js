@@ -36,14 +36,14 @@ const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm"; // 從前端程式�
 
 const io = new Server(server, {
     cors: {
-        origin: ['https://science2.lazyinwork.com'],
+        origin: ['https://science.lazyinwork.com'],
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 });
 
 app.use(cors({
-    origin: ['https://science2.lazyinwork.com'],
+    origin: ['https://science.lazyinwork.com'],
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));

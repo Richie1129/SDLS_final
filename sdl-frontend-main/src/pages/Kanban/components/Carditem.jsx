@@ -13,6 +13,223 @@ import { socket } from '../../../utils/socket';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
+import FileDownload from 'js-file-download';
+import { AiOutlineCloudDownload } from "react-icons/ai";
+
+// 子元件：卡片圖片顯示
+const CardImage = ({ image, onClick, additionalCount }) => (
+  <div className="relative w-full h-40 group">
+    <img
+      src={image}
+      alt="Card Background"
+      className="w-full h-full object-contain rounded-t-lg cursor-pointer bg-gray-50"
+      onClick={onClick}
+    />
+    {additionalCount > 0 && (
+      <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+        +{additionalCount}
+      </div>
+    )}
+  </div>
+);
+
+// 子元件：檔案管理模態框
+const FileManagementModal = ({ 
+  cardData, 
+  handleFileUpload, 
+  handleFileDownload, 
+  removeFile, 
+  removeImage, 
+  openImageModal,
+  fileInputRef 
+}) => {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+
+  return (
+    <div className='flex flex-col w-full mt-6'>
+      <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center space-x-2'>
+          <h3 className='text-lg font-semibold text-gray-800'>檔案管理</h3>
+          <span className='text-sm text-gray-500'>
+            ({cardData.images?.length || 0} 圖片, {cardData.files?.length || 0} 檔案)
+          </span>
+        </div>
+        <label className='flex items-center space-x-2 px-4 py-2 bg-white border border-customgreen text-customgreen rounded-lg hover:bg-customgreen/5 transition-all duration-200 cursor-pointer'>
+          <AiOutlineCloudDownload size={18} />
+          <span className='font-medium'>上傳檔案</span>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileUpload}
+            ref={fileInputRef}
+            className='hidden'
+          />
+        </label>
+      </div>
+
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        {/* Images Section */}
+        <div className='bg-white rounded-xl border border-gray-100 p-4'>
+          <div className='flex items-center justify-between mb-3'>
+            <h4 className='text-base font-medium text-gray-700'>圖片</h4>
+            {cardData.images?.length > 0 && (
+              <span className='text-sm text-gray-500'>{cardData.images.length} 張</span>
+            )}
+          </div>
+          {cardData.images && cardData.images.length > 0 ? (
+            <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
+              {cardData.images.map((image, index) => (
+                <div key={index} className='relative aspect-square group'>
+                  <img 
+                    src={image} 
+                    alt={`Uploaded ${index + 1}`} 
+                    className='w-full h-full object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity duration-200 bg-gray-50'
+                    onClick={() => openImageModal(index)}
+                  />
+                  <button
+                    onClick={() => removeImage(index)}
+                    className='absolute top-2 right-2 p-1.5 bg-white/90 text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm hover:bg-white'
+                  >
+                    <GrFormClose size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className='flex items-center justify-center h-32 bg-gray-50 rounded-lg'>
+              <p className='text-sm text-gray-400'>尚未上傳圖片</p>
+            </div>
+          )}
+        </div>
+
+        {/* Files Section */}
+        <div className='bg-white rounded-xl border border-gray-100 p-4'>
+          <div className='flex items-center justify-between mb-3'>
+            <h4 className='text-base font-medium text-gray-700'>檔案</h4>
+            {cardData.files?.length > 0 && (
+              <span className='text-sm text-gray-500'>{cardData.files.length} 個</span>
+            )}
+          </div>
+          {cardData.files && cardData.files.length > 0 ? (
+            <div className='space-y-2 max-h-[300px] overflow-y-auto'>
+              {cardData.files.map((file, index) => (
+                <div 
+                  key={index} 
+                  className='flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200'
+                >
+                  <div className='flex items-center space-x-3 min-w-0'>
+                    <div className='p-2 bg-white rounded-lg shadow-sm flex-shrink-0'>
+                      <AiOutlineCloudDownload size={20} className="text-gray-400" />
+                    </div>
+                    <div className='flex flex-col min-w-0'>
+                      <span className='text-sm font-medium text-gray-700 truncate'>
+                        {file.originalName}
+                      </span>
+                      <span className='text-xs text-gray-400'>
+                        {file.mimeType}
+                      </span>
+                    </div>
+                  </div>
+                  <div className='flex items-center space-x-2 flex-shrink-0'>
+                    <button
+                      onClick={() => handleFileDownload(file)}
+                      className='px-3 py-1.5 bg-customgreen text-white rounded-lg hover:bg-customgreen/90 transition-colors duration-200 text-sm font-medium'
+                    >
+                      下載
+                    </button>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className='p-1.5 text-gray-400 hover:text-red-500 transition-colors duration-200 rounded-lg hover:bg-gray-200'
+                    >
+                      <GrFormClose size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className='flex items-center justify-center h-32 bg-gray-50 rounded-lg'>
+              <p className='text-sm text-gray-400'>尚未上傳檔案</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const personImg = [
+  '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
+  '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
+  '/public/person/woman1.png', '/public/person/woman2.png', '/public/person/woman3.png'
+];
+
+const Tooltip = ({ children, content }) => {
+  return (
+    <div className='relative group'>
+      {children}
+      <div className='absolute  hidden group-hover:block'>
+        <div className='bg-gray-700 text-white text-xs rounded-lg py-1 px-2 whitespace-nowrap'>
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 子元件：成員指派區塊
+const MemberAssignment = ({ 
+  cardData, 
+  setAssignMemberModalOpen,
+  owner,
+  personImg,
+  Tooltip
+}) => (
+  <div className='bg-white rounded-xl border border-gray-100 p-4 mb-4'>
+    <div className='flex items-center justify-between mb-3'>
+      <h4 className='text-base font-medium text-gray-700'>成員</h4>
+      <button
+        onClick={() => setAssignMemberModalOpen(true)}
+        className='flex items-center space-x-2 px-3 py-1.5 bg-customgreen text-white rounded-lg hover:bg-customgreen/90 transition-colors duration-200'
+      >
+        <BsFillPersonFill size={16} />
+        <span className='text-sm font-medium'>指派成員</span>
+      </button>
+    </div>
+
+    {owner && (
+      <div className='flex items-center space-x-2 mb-3 p-2 bg-gray-50 rounded-lg'>
+        <span className='text-sm font-medium text-gray-600'>建立者:</span>
+        <span className='text-sm text-gray-500'>{owner}</span>
+      </div>
+    )}
+
+    {cardData.assignees?.length > 0 ? (
+      <div className='flex flex-wrap gap-2'>
+        {cardData.assignees.map((assignee, index) => {
+          const imgIndex = parseInt(assignee.id) % personImg.length;
+          const userImg = personImg[imgIndex];
+          return (
+            <Tooltip key={index} content={assignee.username}>
+              <div className='flex items-center space-x-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200'>
+                <img
+                  src={userImg}
+                  alt={assignee.username}
+                  className='w-6 h-6 rounded-full shadow-sm object-cover'
+                />
+                <span className='text-sm text-gray-600'>{assignee.username}</span>
+              </div>
+            </Tooltip>
+          );
+        })}
+      </div>
+    ) : (
+      <div className='flex items-center justify-center h-20 bg-gray-50 rounded-lg'>
+        <p className='text-sm text-gray-400'>尚未指派成員</p>
+      </div>
+    )}
+  </div>
+);
 
 function Carditem({ data, index, columnIndex }) {
   const [open, setOpen] = useState(false);
@@ -45,11 +262,6 @@ function Carditem({ data, index, columnIndex }) {
       prev === 0 ? cardData.images.length - 1 : prev - 1
     );
   };
-  const personImg = [
-    '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
-    '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
-    '/public/person/woman1.png', '/public/person/woman2.png', '/public/person/woman3.png'
-  ];
 
   const [menberData, setMenberData] = useState([]);
 
@@ -76,10 +288,10 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('https://science2.lazyinwork.com/api/upload', formData, {
-          headers: {
+      const response = await axios.post('https://science.lazyinwork.com/api/upload', formData, {
+        headers: {
           'Content-Type': 'multipart/form-data',
-          },
+        },
       });
 
       const uploadedFiles = response.data.files.filter(
@@ -87,7 +299,7 @@ function Carditem({ data, index, columnIndex }) {
       );
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `https://science2.lazyinwork.com/api${file.url}`);
+        .map((file) => `https://science.lazyinwork.com/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,
@@ -103,6 +315,18 @@ function Carditem({ data, index, columnIndex }) {
     } catch (err) {
       console.error('檔案上傳失敗:', err);
       toast.error('檔案上傳失敗');
+    }
+  };
+
+  const handleFileDownload = async (file) => {
+    try {
+      const response = await axios.get(`https://science.lazyinwork.com/api${file.url}`, {
+        responseType: 'blob'
+      });
+      FileDownload(response.data, file.originalName);
+    } catch (err) {
+      console.error('檔案下載失敗:', err);
+      toast.error('檔案下載失敗');
     }
   };
 
@@ -151,18 +375,6 @@ function Carditem({ data, index, columnIndex }) {
       }
     });
   };
-  const Tooltip = ({ children, content }) => {
-    return (
-      <div className='relative group'>
-        {children}
-        <div className='absolute  hidden group-hover:block'>
-          <div className='bg-gray-700 text-white text-xs rounded-lg py-1 px-2 whitespace-nowrap'>
-            {content}
-          </div>
-        </div>
-      </div>
-    );
-  };
   
   return (
     <>
@@ -172,50 +384,74 @@ function Carditem({ data, index, columnIndex }) {
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            className={`item-container p-2 rounded-lg mb-2 w-full shadow-lg hover:skew-y-2 ${snapshot.isDragging ? "dragging bg-customgreen/90 text-white" : "bg-white"}`}
+            className={`item-container rounded-lg mb-3 w-full transition-all duration-200 ${
+              snapshot.isDragging 
+                ? "shadow-xl bg-customgreen/90 text-white" 
+                : "bg-white shadow-md hover:shadow-lg"
+            }`}
           >
             {cardData.images && cardData.images.length > 0 && (
-              <div className="relative">
-                <img
-                  src={`${cardData.images[0]}`} // 確保路徑完整
-                  alt="Card Background"
-                  className="w-full h-32 object-cover rounded-t-lg cursor-pointer"
-                  onClick={() => openImageModal(0)}  
-                  />
-              </div>
+              <CardImage 
+                image={cardData.images[0]}
+                onClick={() => openImageModal(0)}
+                additionalCount={cardData.images.length - 1}
+              />
             )}
-             {cardData.images.length > 1 && (
-              <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
-                +{cardData.images.length - 1}
-              </div>
-            )}
-            
 
-            <div className="p-2">
-              <div className="flex justify-between">
-                <p className="text-base font-semibold truncate" style={{ maxWidth: "150px" }}>
+            <div className="p-3">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-base font-semibold text-gray-800 line-clamp-2 pr-2">
                   {data.title}
+                </h3>
+                <button
+                  onClick={() => setOpen(true)}
+                  className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <FiEdit size={16} />
+                </button>
+              </div>
+
+              {data.content && (
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                  {data.content}
                 </p>
-                <FiEdit onClick={() => setOpen(true)} className="w-5 h-5 cursor-pointer" />
-              </div>
-              <div>
-                <p className="truncate">{data.content}</p>
-              </div>
-              <div className="flex justify-end items-center space-x-1">
-                {data.assignees?.map((assignee, index) => {
-                  const imgIndex = parseInt(assignee.id) % personImg.length;
-                  const userImg = personImg[imgIndex];
-                  return (
-                    <img
-                      key={index}
-                      src={userImg}
-                      alt="Person"
-                      className="w-8 h-8 my-1 overflow-hidden rounded-full shadow-xl object-cover"
-                      title={assignee.username}
-                    />
-                  );
-                })}
-              </div>
+              )}
+
+              {data.assignees?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {data.assignees.map((assignee, index) => {
+                    const imgIndex = parseInt(assignee.id) % personImg.length;
+                    const userImg = personImg[imgIndex];
+                    return (
+                      <Tooltip key={index} content={assignee.username}>
+                        <img
+                          src={userImg}
+                          alt="Person"
+                          className="w-6 h-6 rounded-full shadow-sm object-cover"
+                          title={assignee.username}
+                        />
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              )}
+
+              {(cardData.files?.length > 0 || cardData.images?.length > 0) && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  {cardData.images?.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <AiOutlineCloudDownload size={12} />
+                      {cardData.images.length} 圖片
+                    </span>
+                  )}
+                  {cardData.files?.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      <AiOutlineCloudDownload size={12} />
+                      {cardData.files.length} 檔案
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -280,107 +516,66 @@ function Carditem({ data, index, columnIndex }) {
         </Modal>
       )}
 
-      {cardData && (
+      {open && (
         <Modal open={open} onClose={() => setOpen(false)} opacity={true} position={"justify-center items-center"}>
-          <div className='flex justify-between'>
-            <div className='flex flex-col w-2/3'>
+          <div className='flex flex-col w-full'>
+            <div className='flex justify-between mb-4'>
               <input
-                className="rounded outline-none ring-2 p-1 ring-customgreen w-full mb-3"
+                className="rounded outline-none ring-2 p-2 ring-customgreen w-full"
                 type="text"
-                placeholder="title"
-                name='title'
+                placeholder="標題"
                 value={cardData.title}
                 onChange={(e) => setCardData({ ...cardData, title: e.target.value })}
               />
-              <textarea
-                className="rounded outline-none ring-2 ring-customgreen w-full p-1"
-                rows={3}
-                placeholder="Task info"
-                name='content'
-                value={cardData.content}
-                onChange={(e) => setCardData({ ...cardData, content: e.target.value })}
-              />
             </div>
-            <div className='flex flex-col w-1/3 ml-4'>
+            <textarea
+              className="rounded outline-none ring-2 ring-customgreen w-full p-2 mb-4"
+              rows={3}
+              placeholder="內容"
+              value={cardData.content}
+              onChange={(e) => setCardData({ ...cardData, content: e.target.value })}
+            />
+            
+            <MemberAssignment
+              cardData={cardData}
+              setAssignMemberModalOpen={setAssignMemberModalOpen}
+              owner={data.owner}
+              personImg={personImg}
+              Tooltip={Tooltip}
+            />
+            
+            <FileManagementModal
+              cardData={cardData}
+              handleFileUpload={handleFileUpload}
+              handleFileDownload={handleFileDownload}
+              removeFile={removeFile}
+              removeImage={removeImage}
+              openImageModal={openImageModal}
+              fileInputRef={fileInputRef}
+            />
+
+            <div className='flex justify-end mt-4 space-x-2'>
               <button
-                onClick={() => setAssignMemberModalOpen(true)}
-                className="flex justify-start items-center w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60"
+                onClick={cardHandleDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
               >
-                <BsFillPersonFill className='w-3 h-3 sm:w-5 sm:h-5 mx-2 text-black' />
-                指派成員
+                刪除
               </button>
-              {data.owner && (
-                  <div className="flex items-center space-x-2">
-                      <span className="text-sm font-bold">建立者:</span>
-                      <span className="text-sm">{data.owner}</span>
-                  </div>
-              )}
-              <div className="mt-3">
-                <label className="block font-bold mb-1">上傳檔案：</label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  ref={fileInputRef}
-                />
-              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200"
+              >
+                取消
+              </button>
+              <button
+                onClick={cardHandleSubmit}
+                className="px-4 py-2 bg-customgreen text-white rounded-lg hover:bg-customgreen/90 transition-colors duration-200"
+              >
+                儲存
+              </button>
             </div>
           </div>
-
-          <div className='flex flex-wrap mt-3'>
-            {cardData.images?.map((image, index) => (
-              <div key={index} className='relative m-1'>
-                <img src={image} alt="Uploaded" className='w-20 h-20 object-cover rounded shadow-md' />
-                <button
-                  onClick={() => removeImage(index)}
-                  className='absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full p-1'
-                >
-                  x
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="flex justify-start items-center w-full h-7 m-1 font-bold text-sm sm:text-base text-black/60">
-            指派成員
-          </p>
-      <div className='flex flex-row'>
-        {
-          cardData.assignees &&
-              cardData.assignees.map((assignee, index) => {
-                const imgIndex = parseInt(assignee.id) % 9;
-                const userImg = personImg[imgIndex];
-                return (
-              <Tooltip key={index} children={""} content={`${assignee.username}`}>
-                    <div className="relative w-8 h-8 rounded-full shadow-xl">
-                  <img src={userImg} alt="Person" className="w-8 h-8 overflow-hidden rounded-full shadow-xl object-cover" />
-                    </div>
-                  </Tooltip>
-            )
-          })
-        }
-          </div>
-
-          <div className='flex justify-between mt-2'>
-            <button
-              className="flex justify-center items-center w-full h-7 mb-2 bg-[#fa3c3c] rounded font-bold text-xs sm:text-sm text-white mr-2"
-              onClick={cardHandleDelete}
-            >
-              刪除
-            </button>
-            <button
-              className="flex justify-center items-center w-full h-7 mb-2 bg-customgreen rounded font-bold text-xs sm:text-sm text-white mr-2"
-              onClick={cardHandleSubmit}
-            >
-              儲存
-            </button>
-            <button
-              className="flex justify-center items-center w-full h-7 mb-2 bg-customgray rounded font-bold text-xs sm:text-sm text-black/60 mr-2"
-              onClick={() => setOpen(false)}
-            >
-              取消
-            </button>
-          </div>
-        </Modal>
+        </Modal> 
       )}
 
       <Modal open={assignMemberModalopen} onClose={() => setAssignMemberModalOpen(false)} opacity={false} position={"justify-end items-center m-3"}>
