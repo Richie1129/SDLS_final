@@ -2,7 +2,7 @@ import axios from "axios";
 
 
 const nodeApi = axios.create({
-    baseURL: "https://sdls.sdlswuret.systems/api/node",
+    baseURL: "https://science2.lazyinwork.com/api/node",
     headers:{
         "Content-Type":" application/json"
     },

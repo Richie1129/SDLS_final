@@ -76,7 +76,7 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('https://sdls.sdlswuret.systems/api/upload', formData, {
+      const response = await axios.post('https://science2.lazyinwork.com/api/upload', formData, {
           headers: {
           'Content-Type': 'multipart/form-data',
           },
@@ -87,7 +87,7 @@ function Carditem({ data, index, columnIndex }) {
       );
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `https://sdls.sdlswuret.systems/api${file.url}`);
+        .map((file) => `https://science2.lazyinwork.com/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,

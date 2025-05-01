@@ -23,20 +23,27 @@ const Rag_message = require('./models/rag_message')
 const Project = require('./models/project')
 const QuestionMessage = require('./models/question_message')
 const Announcement = require('./models/announcement');
-const { request } = require('https');
-
+const axios = require('axios');
+const https = require('https');
 const { rm } = require('fs');
+
+const agent = new https.Agent({
+    rejectUnauthorized: false, // 忽略證書驗證
+});
+
+const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm"; // 從前端程式碼中提取的 API Key
+
 
 const io = new Server(server, {
     cors: {
-        origin: "https://sdls.sdlswuret.systems",
+        origin: ['https://science2.lazyinwork.com'],
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 });
 
 app.use(cors({
-    origin: "https://sdls.sdlswuret.systems",
+    origin: ['https://science2.lazyinwork.com'],
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
@@ -549,6 +556,53 @@ app.post('/api/upload', upload.array('files', 10), (req, res) => {
     } catch (error) {
         console.error('檔案上傳失敗:', error);
         res.status(500).json({ message: '檔案上傳失敗', error: error.message });
+    }
+});
+
+app.post('/proxy/api/v1/chats/:chatId/sessions', async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        console.log("req.body", req.body)
+        console.log("chatId", chatId)
+        console.log("testingCHaTTTTTTTTTTT")
+        const response = await axios.post(
+            `https://140.115.126.193/api/v1/chats/${chatId}/sessions`,
+            req.body,
+            {
+                headers: {
+                    Authorization: `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                httpsAgent: agent, // 忽略證書驗證
+            }
+        );
+        console.log("response", response)
+        console.log("-----------------------------")
+        res.json(response.data);
+    } catch (error) {
+        console.error("代理請求失敗 (sessions):", error.message);
+        res.status(500).json({ message: "代理請求失敗", error: error.message });
+    }
+});
+
+app.post('/proxy/api/v1/chats/:chatId/completions', async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const response = await axios.post(
+            `https://140.115.126.193/api/v1/chats/${chatId}/completions`,
+            req.body,
+            {
+                headers: {
+                    Authorization: `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                httpsAgent: agent, // 忽略證書驗證
+            }
+        );
+        res.json(response.data);
+    } catch (error) {
+        console.error("代理請求失敗 (completions):", error.message);
+        res.status(500).json({ message: "代理請求失敗", error: error.message });
     }
 });
 

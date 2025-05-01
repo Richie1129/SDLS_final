@@ -6,6 +6,9 @@ export default defineConfig({
   server:{
     host:"0.0.0.0",
     port:5173,
+    hmr: {
+      overlay: false, // ← 關閉錯誤覆蓋畫面，避免干擾開發
+    },
   },
   watch: {
     usePolling: true

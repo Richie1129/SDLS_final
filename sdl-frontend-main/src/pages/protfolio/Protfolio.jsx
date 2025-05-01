@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AiTwotoneFolderAdd } from "react-icons/ai";
 import { GrFormClose } from "react-icons/gr";
 import { useQuery, useQueryClient } from 'react-query';
-import { getAllSubmit, updateSubmitTask } from '../../api/submit';
+import { getAllSubmit, updateSubmitTask, updateSubmitAttachment } from '../../api/submit';
 import { useParams } from 'react-router-dom';
 import Loader from '../../components/Loader';
 import FolderModal from './components/folderModal';
@@ -10,7 +10,7 @@ import dateFormat from 'dateformat';
 import ProtfoliioIcon from "../../assets/AnimationProtfoliio.json";
 import Lottie from "lottie-react";
 import { socket } from '../../utils/socket';
-import { AiOutlineCloudDownload } from "react-icons/ai";
+import { AiOutlineCloudDownload, AiOutlineUpload } from "react-icons/ai";
 import FileDownload from 'js-file-download';
 import { BiSave } from "react-icons/bi";
 import Swal from "sweetalert2";
@@ -25,6 +25,7 @@ export default function Protfolio() {
     let portfolioItemsWithTitles = [];
     // 在 component 內部
     const [editableContent, setEditableContent] = useState(""); 
+    const queryClient = useQueryClient();
     
     const {
         isLoading,
@@ -132,6 +133,25 @@ export default function Protfolio() {
             FileDownload(blob, "downloaded-file.png"); // 請根據實際文件類型調整 MIME 類型和文件名
         }
     };
+
+    // 加入檔案變更處理
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('attachFile', file);  // 欄位名稱要跟後端 upload.array 的 key 一致
+    try {
+      await updateSubmitAttachment(modalData.id, formData);
+      Swal.fire({ icon: 'success', title: '檔案重新上傳成功', confirmButtonColor: '#5BA491' });
+      // 更新列表
+      queryClient.invalidateQueries('protfolioDatas');
+      setFolderModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ icon: 'error', title: '重新上傳失敗', text: '請稍後再試', confirmButtonColor: '#d33' });
+    }
+  };
+
     // socket
     useEffect(() => {
         socket.connect();
@@ -255,6 +275,7 @@ export default function Protfolio() {
                                 <span className="font-bold text-lg text-gray-700">附加檔案:</span>
                                 <p className="text-gray-600">{modalData.fileName}</p>
                             </div>
+                            <div className="flex space-x-2">
                             <button
                                 className="mt-3 inline-flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300 ease-in-out"
                                 onClick={() => {
@@ -279,6 +300,16 @@ export default function Protfolio() {
                                 <AiOutlineCloudDownload size={32} className="text-white mr-1" />
                                 <span>下載附件</span>
                             </button>
+                            <label className="mt-3 inline-flex items-center justify-center px-4 py-2 bg-[#5BA491] text-white rounded-md hover:bg-[#487e6c] transition-colors duration-300 ease-in-out cursor-pointer">
+                            <AiOutlineUpload size={32} className="text-white mr-1" />
+                            <span>重新上傳</span>
+                            <input
+                                type="file"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </label>
+                        </div>
                         </>
                     )}
                     {isLoading && <Loader />}

@@ -168,6 +168,35 @@ exports.updateSubmit = async (req, res) => {
     }
 };
 
+exports.updateSubmit = async (req, res) => {
+    const submitId = req.params.submitId;
+    const { content } = req.body;
+    try {
+      const submit = await Submit.findByPk(submitId);
+      if (!submit) return res.status(404).json({ message: "找不到該提交記錄" });
+  
+      // 1. 如果有新檔案
+      if (req.files && req.files.length > 0) {
+        // 這裡示範只取第一個檔案，你也可以遍歷多檔
+        const file = req.files[0];
+        const buffer = await fs.readFile(file.path);
+        await submit.update({
+          fileData: buffer,
+          fileName: file.filename
+        });
+      }
+  
+      // 2. 更新文字內容（如果有）
+      if (content !== undefined) {
+        await submit.update({ content });
+      }
+  
+      return res.status(200).json({ message: "更新成功" });
+    } catch (err) {
+      console.error("updateSubmit 錯誤:", err);
+      return res.status(500).json({ message: "更新失敗" });
+    }
+  };
 
 // exports.getProfolioSubmit = async(req, res) => {
 //     const { projectId } = req.query;

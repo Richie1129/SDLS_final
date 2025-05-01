@@ -118,7 +118,6 @@ exports.getKanban = async ( req, res ) => {
     
         // 更新当前列的任务数据
         sortedColumnData[columnIndex].task = sortedTaskData;
-        console.log("🔍 取得的任務資料1:", JSON.stringify(sortedTaskData, null, 2));
     }));
 
     res.status(200).json(sortedColumnData);
@@ -126,7 +125,6 @@ exports.getKanban = async ( req, res ) => {
 }
 
 exports.getKanbanTask = async ( req, res ) =>{
-    console.log("🔍 取得的任務資料:", JSON.stringify(taskData, null, 2));
     const columnId = req.params.columnId;
     const taskData = await Task.findAll({
         attributes:[
@@ -143,7 +141,6 @@ exports.getKanbanTask = async ( req, res ) =>{
         }
     })
     .then( result =>{
-        console.log("🔍 取得的任務資料:", JSON.stringify(taskData, null, 2)); // ✅ 確認後端回傳
         res.status(200).json(result);
     })
     .catch( err => {

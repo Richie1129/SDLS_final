@@ -6,5 +6,5 @@ router.post('/', upload.array("attachFile"), controller.createSubmit);
 router.get('/', controller.getAllSubmit);
 router.get('/:submitId', controller.getSubmit)
 // router.get('/:submitId/profolio', controller.getProfolioSubmit)
-router.put('/:submitId', controller.updateSubmit);
+router.put('/:submitId', upload.array("attachFile"), controller.updateSubmit);
 module.exports = router;

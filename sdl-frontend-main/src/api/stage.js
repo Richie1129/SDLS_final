@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const stageApi = axios.create({
-    baseURL: "https://sdls.sdlswuret.systems/api/stage",
+    baseURL: "https://science2.lazyinwork.com/api/stage",
     headers:{
         "Content-Type":" application/json"
     },

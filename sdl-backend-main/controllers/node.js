@@ -10,7 +10,6 @@ exports.createNode = async(req, res) => {
         content:content,
         ideaWallId:ideaWallId
     }).then(result =>{
-        console.log(result);
         res.status(200).json(result)
     })
     .catch(err => console.log(err));
@@ -18,13 +17,11 @@ exports.createNode = async(req, res) => {
 
 exports.getNodes = async(req, res) => {
     const ideaWallId = req.params.ideaWallId
-    console.log(ideaWallId);
     await Node.findAll({
         where:{
             ideaWallId:ideaWallId
         }
     }).then(result =>{
-        console.log(result);
         res.status(200).json(result)
     })
     .catch(err => console.log(err));
@@ -62,7 +59,6 @@ exports.createNodeRelation = async(req, res) => {
         to_id:to_id,
         ideaWallId:ideaWallId
     }).then(result =>{
-        console.log(result);
         res.status(200).json(result)
     })
     .catch(err => console.log(err));

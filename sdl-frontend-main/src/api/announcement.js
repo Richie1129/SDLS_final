@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const announcementApi = axios.create({
-    baseURL: "https://sdls.sdlswuret.systems/api/announcements", // 確保路徑正確
+    baseURL: "https://science2.lazyinwork.com/api/announcements", // 確保路徑正確
     headers: {
         "Content-Type": "application/json",
     },

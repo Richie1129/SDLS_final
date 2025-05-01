@@ -14,7 +14,6 @@ exports.getProject = async (req, res) => {
     const projectId = req.params.projectId;
     await Project.findByPk(projectId)
         .then(result => {
-            console.log(result);
             res.status(200).json(result)
         })
         .catch(err => console.log(err));
@@ -32,7 +31,6 @@ exports.getAllProject = async (req, res) => {
         }]
     })
         .then(result => {
-            console.log(result);
             res.status(200).json(result)
         })
         .catch(err => console.log(err));
@@ -41,7 +39,6 @@ exports.getAllProject = async (req, res) => {
 }
 
 exports.getProjectsByMentor = async (req, res) => {
-    console.log(req)
     const mentorName = req.params.mentor; // 從 URL 參數中獲取 mentor 名字
     console.log("mentorName:",mentorName)
     try {

@@ -29,14 +29,15 @@ services:
   api:
     build:
       context: ./sdl-backend-main
-      dockerfile: dockerfile
+      # dockerfile: dockerfile
+    image: stone881129/sdl-api:latest     # <--- 加這行
     expose:
       - 3000
     environment:
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_USER=postgres
-      - PG_PASSWORD=ytwu35415
+      - PG_PASSWORD=postgres
       - PG_NAME=sdls_fullstack_postgres1
     volumes:
       - "./sdl-backend-main:/sdl-backend-main"
@@ -51,7 +52,8 @@ services:
   front:
     build:
       context: ./sdl-frontend-main
-      dockerfile: dockerfile
+      # dockerfile: dockerfile
+    image: stone881129/sdl-front:latest   # <--- 加這行
     expose:
       - 5173
     networks:
@@ -63,7 +65,7 @@ services:
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=ytwu35415
+      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
     networks:

@@ -493,6 +493,9 @@ const handleDeleteProject = (projectId) => {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
                     <div className='text-sm text-gray-500'>成員：
@@ -552,6 +555,9 @@ const handleDeleteProject = (projectId) => {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
                     <div className='text-sm text-gray-500'>成員：
@@ -601,6 +607,9 @@ const handleDeleteProject = (projectId) => {
                     <Tooltip children={"活動描述"} content={`${projectItem.describe}`}>
                       <p className='text-gray-600 font-semibold truncate overflow-hidden h-6 '>{projectItem.describe}</p>
                     </Tooltip>
+                    <div className='text-sm text-gray-500 font-bold'>
+                      目前階段：{projectItem.currentStage}-{projectItem.currentSubStage}
+                    </div>
                     <div className='text-sm text-gray-500'>指導老師：{projectItem.mentor}</div>
                     <div className='text-sm text-gray-500'>邀請碼：{projectItem.referral_code}</div>
                     <div className='text-sm text-gray-500'>成員：

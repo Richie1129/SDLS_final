@@ -2,14 +2,14 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const submitApi = axios.create({
-    baseURL: "https://sdls.sdlswuret.systems/api/submit",
+    baseURL: "https://science2.lazyinwork.com/api/submit",
     headers:{
         "Content-Type":" multipart/form-data"
     },
 })
 
 const getsubmitApi = axios.create({
-    baseURL: "https://sdls.sdlswuret.systems/api/submit",
+    baseURL: "https://science2.lazyinwork.com/api/submit",
     headers:{
         "Content-Type":" application/json"
     },
@@ -34,6 +34,12 @@ export const updateSubmitTask = async (submitId, data) => {
     const response = await getsubmitApi.put(`/${submitId}`, data);
     return response.data;
 };
+
+// 上傳檔案用 multipart/form-data
+export const updateSubmitAttachment = async (submitId, formData) => {
+    const response = await submitApi.put(`/${submitId}`, formData);
+    return response.data;
+ };
 
 // export const getProfolioSubmit = async (submitId,config) => {
 //     const response = await getsubmitApi.get(`/${submitId}/profolio`,config)
