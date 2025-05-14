@@ -15,6 +15,10 @@ const Rag_message = sequelize.define('Rag_message', {
         type: DataTypes.TEXT,
         allowNull: true
     },
+    userName: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,

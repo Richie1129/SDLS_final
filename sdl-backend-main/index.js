@@ -123,12 +123,21 @@ io.on("connection", (socket) => {
     ensureListener(socket, "rag_message", async (data) => {
         console.log("接收到的資料：", data); // 打印接收到的資料
         try {
+            // 確保 creator 是有效的數字
+            const userId = parseInt(data.creator) || 1;
+            console.log("使用的 userId:", userId); // 記錄實際使用的 userId
+            
+            // 獲取用戶名稱，如果沒有則使用預設值
+            const userName = data.userName || data.author || "未知用戶";
+            console.log("使用的用戶名稱:", userName); // 記錄實際使用的用戶名稱
+            
             if (data.messageType === 'input') {
                 // 當接收到 input_message 時，創建新的資料庫紀錄，並儲存其 ID
                 const newMessage = await Rag_message.create({
                     input_message: data.message,  // 儲存 input_message
                     author: data.author,
-                    userId: data.creator
+                    userId: userId,  // 使用確認過的 userId
+                    userName: userName  // 儲存用戶名稱
                 });
     
                 // 將訊息的 ID 返回前端，便於後續 response_message 更新
@@ -138,12 +147,13 @@ io.on("connection", (socket) => {
                 await Rag_message.update(
                     {
                         response_message: data.message,  // 更新 response_message
-                        author: data.author || 'system'  // 如果未提供 author，設為 'system'
+                        author: data.author || 'system',  // 如果未提供 author，設為 'system'
+                        userName: userName  // 更新用戶名稱
                     },
                     {
                         where: {
                             id: data.messageId,  // 根據 messageId 來匹配對應的 input_message
-                            userId: data.creator
+                            userId: userId  // 使用確認過的 userId
                         }
                     }
                 );
@@ -153,7 +163,9 @@ io.on("connection", (socket) => {
         }
     
         // 將訊息發送到對應的房間
-        socket.to(data.room).emit("receive_rag_message", data);
+        if (data.room) {
+            socket.to(data.room).emit("receive_rag_message", data);
+        }
     });
     //create card
     socket.on("taskItemCreated", async (data) => {
@@ -636,11 +648,11 @@ app.use((error, req, res, next) => {
 });
 
 // sync database
-// sequelize.sync({ alter: true })  //{force:true} {alter:true}
-//     .then(result => {
-//         console.log("Database connected");
-
-//     })
-//     .catch(err => console.log(err));
+sequelize.sync({ alter: true })  // {force:true} {alter:true}
+    .then(result => {
+        console.log("Database connected");
+        console.log("Database structure synced");
+    })
+    .catch(err => console.log(err));
 
 server.listen(3000);
