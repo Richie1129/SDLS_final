@@ -1,24 +1,25 @@
-# sdl-frontend-main/Dockerfile.prod
-# Stage 1: Build the React application
+# Stage 1: Build React app
 FROM node:20.7.0-alpine AS builder
-WORKDIR /sdl-frontend-main
+
+WORKDIR /app
 
 COPY package*.json ./
-# If you use a package-lock.json, consider npm ci
 RUN npm install
 
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
-FROM nginx:alpine
+# Stage 2: Use serve to host static files
+FROM node:20.7.0-alpine
 
-# Copy built assets from the builder stage
-COPY --from=builder /sdl-frontend-main/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom Nginx configuration, if you have one specifically for production frontend serving
-# COPY nginx.prod.conf /etc/nginx/conf.d/default.conf
+# 安裝 serve
+RUN npm install -g serve
 
-EXPOSE 80
+# 複製 build 後的檔案
+COPY --from=builder /app/dist .
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 5173
+
+CMD ["serve", "-s", ".", "-l", "5173"]

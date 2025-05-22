@@ -159,9 +159,9 @@ const FileManagementModal = ({
 };
 
 const personImg = [
-  '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
-  '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
-  '/public/person/woman1.png', '/public/person/woman2.png', '/public/person/woman3.png'
+  '/person/man1.png', '/person/man2.png', '/person/man3.png',
+  '/person/man4.png', '/person/man5.png', '/person/man6.png',
+  '/person/woman1.png', '/person/woman2.png', '/person/woman3.png'
 ];
 
 const Tooltip = ({ children, content }) => {
@@ -288,7 +288,7 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('https://science.lazyinwork.com/api/upload', formData, {
+      const response = await axios.post('http://localhost/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -298,14 +298,14 @@ function Carditem({ data, index, columnIndex }) {
       const uploadedFiles = response.data.files
         .filter((file) => !file.mimeType.startsWith("image/"))
         .map((file) => ({
-          url: `https://science.lazyinwork.com/api${file.url}`,
+          url: `http://localhost/api${file.url}`,
           originalName: file.originalName,
           mimeType: file.mimeType
         }));
       
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `https://science.lazyinwork.com/api${file.url}`);
+        .map((file) => `http://localhost/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,
@@ -326,7 +326,7 @@ function Carditem({ data, index, columnIndex }) {
 
   const handleFileDownload = async (file) => {
     try {
-      const response = await axios.get(`https://science.lazyinwork.com/api${file.url}`, {
+      const response = await axios.get(`http://localhost/api${file.url}`, {
         responseType: 'blob'
       });
       FileDownload(response.data, file.originalName);
@@ -494,14 +494,14 @@ function Carditem({ data, index, columnIndex }) {
                   onClick={prevImage}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
                 >
-                  <CaretCircleLeft size={24}/>
+                  <CircleArrowLeft size={24}/>
                 </button>
                 
                 <button
                   onClick={nextImage}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
                 >
-                  <CaretCircleRight size={24}/>
+                  <CircleArrowRight size={24}/>
                 </button>
                 
                 

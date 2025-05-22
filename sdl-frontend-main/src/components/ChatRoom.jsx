@@ -12,9 +12,9 @@ export default function ChatRoom({ chatRoomOpen, setChatRoomOpen }) {
     const [messageList, setMessageList] = useState([]);
     const bottomRef = useRef(null);
     const personImg = [
-        '/public/person/man1.png', '/public/person/man2.png', '/public/person/man3.png',
-        '/public/person/man4.png', '/public/person/man5.png', '/public/person/man6.png',
-        '/public/person/woman1.png', '/public/person/woman2.png', '/public/person/woman3.png'
+        '/person/man1.png', '/person/man2.png', '/person/man3.png',
+        '/person/man4.png', '/person/man5.png', '/person/man6.png',
+        '/person/woman1.png', '/person/woman2.png', '/person/woman3.png'
     ];
 
 
