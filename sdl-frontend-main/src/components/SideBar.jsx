@@ -1,24 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
-import { FaBars } from 'react-icons/fa';
 import { IoBulbOutline } from 'react-icons/io5';
 import { FaRegLightbulb } from "react-icons/fa";
 import { MdOutlineViewKanban } from "react-icons/md";
 import { TiFolderOpen } from "react-icons/ti";
-import { AiOutlineProject } from "react-icons/ai";
 import { CgNotes, CgFolder } from "react-icons/cg";
-import { BsBezier2, BsChatText, BsJournalText, BsFolder } from "react-icons/bs";
 import { LuLayoutDashboard } from "react-icons/lu";
-import { GrCompliance } from "react-icons/gr";
 import { BiTask } from "react-icons/bi";
 import { BsChatDots } from "react-icons/bs";
 import { TbMessageQuestion } from "react-icons/tb";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 // import { socket } from '../utils/Socket';
 import { Context } from '../context/context'
-import { TbZoomQuestion } from "react-icons/tb";
 import ChatRoom from './ChatRoom';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
 
 
 const AnimatedHamburgerButton = () => {

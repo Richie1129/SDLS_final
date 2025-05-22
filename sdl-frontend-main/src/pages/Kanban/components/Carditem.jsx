@@ -12,7 +12,7 @@ import { Draggable } from 'react-beautiful-dnd';
 import { socket } from '../../../utils/socket';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
-import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
+import { CircleArrowLeft, CircleArrowRight } from "lucide-react"
 import FileDownload from 'js-file-download';
 import { AiOutlineCloudDownload } from "react-icons/ai";
 
