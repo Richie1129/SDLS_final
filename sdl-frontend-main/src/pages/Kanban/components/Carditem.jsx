@@ -288,7 +288,7 @@ function Carditem({ data, index, columnIndex }) {
     });
 
     try {
-      const response = await axios.post('http://localhost/api/upload', formData, {
+      const response = await axios.post('https://science.lazyinwork.com/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -298,14 +298,14 @@ function Carditem({ data, index, columnIndex }) {
       const uploadedFiles = response.data.files
         .filter((file) => !file.mimeType.startsWith("image/"))
         .map((file) => ({
-          url: `http://localhost/api${file.url}`,
+          url: `https://science.lazyinwork.com/api${file.url}`,
           originalName: file.originalName,
           mimeType: file.mimeType
         }));
       
       const uploadedImages = response.data.files
         .filter((file) => file.mimeType.startsWith("image/"))
-        .map((file) => `http://localhost/api${file.url}`);
+        .map((file) => `https://science.lazyinwork.com/api${file.url}`);
 
       setCardData((prev) => ({
         ...prev,
@@ -326,7 +326,7 @@ function Carditem({ data, index, columnIndex }) {
 
   const handleFileDownload = async (file) => {
     try {
-      const response = await axios.get(`http://localhost/api${file.url}`, {
+      const response = await axios.get(`https://science.lazyinwork.com/api${file.url}`, {
         responseType: 'blob'
       });
       FileDownload(response.data, file.originalName);
