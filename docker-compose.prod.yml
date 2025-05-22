@@ -4,18 +4,20 @@ services:
     restart: always
     ports:
       - 80:80    
-      - 443:443  # 添加 443 端口用於 HTTPS
+      - 443:443
     volumes:
-      - "./nginx.conf:/etc/nginx/nginx.conf"  # Nginx 配置文件
-      - "./letsencrypt:/etc/letsencrypt"      # Let's Encrypt 憑證目錄
-      - "./www:/var/www/html"                 # 用於 Let's Encrypt 驗證的靜態文件目錄
+      - "./nginx.conf:/etc/nginx/nginx.conf"
+      - "./letsencrypt:/etc/letsencrypt"
+      - "./www:/var/www/html"
     depends_on:
       - api
+      - front
     networks:
       - agent_network
 
   certbot:
     image: certbot/certbot
+    restart: always
     volumes:
       - "./letsencrypt:/etc/letsencrypt"
       - "./www:/var/www/html"
@@ -28,8 +30,9 @@ services:
   api:
     build:
       context: ./sdl-backend-main
-      # dockerfile: dockerfile
-    image: stone881129/sdl-api:latest     # <--- 加這行
+      dockerfile: Dockerfile.prod
+    image: stone881129/sdl-api:latest
+    restart: always
     expose:
       - 3000
     environment:
@@ -39,8 +42,6 @@ services:
       - PG_PASSWORD=postgres
       - PG_NAME=sdls_fullstack_postgres1
     volumes:
-      - "./sdl-backend-main:/sdl-backend-main"
-      - "/sdl-backend-main/node_modules"
       - "./sdl-backend-main/daily_file:/sdl-backend-main/daily_file"
     networks:
       - agent_network
@@ -51,22 +52,23 @@ services:
   front:
     build:
       context: ./sdl-frontend-main
-      # dockerfile: dockerfile
-    image: stone881129/sdl-front:latest   # <--- 加這行
+      dockerfile: Dockerfile.prod
+    image: stone881129/sdl-front:latest
+    restart: always
     expose:
-      - 5173
+      - 80
     networks:
       - agent_network
 
   postgres:
-    image: postgres
-    restart: unless-stopped
+    image: postgres:latest
+    restart: always
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
+    expose:
+      - 5432
     networks:
       - agent_network
     healthcheck:
@@ -77,19 +79,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=wulab@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=ytwu35415
-    ports:
-      - "5555:80"
-    networks:
-      - agent_network
-
 networks:
   agent_network:
 
 volumes:
-  postgres_data:
+  postgres_data: 
