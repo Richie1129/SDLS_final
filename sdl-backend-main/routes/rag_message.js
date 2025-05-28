@@ -2,6 +2,9 @@
 const router = require('express').Router();
 const controller = require('../controllers/rag_message'); // 确保路径正确
 
+// 測試連接
+router.get('/test/:userId', controller.testConnection);
+
 // 获取用戶所有 RAG 訊息歷史
 router.get('/history/:userId', controller.getRagMessageHistory);
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { socket } from "../../../utils/socket";
+import { getUserSessions, getRagMessageBySession, testConnection } from "../../../api/rag";
 
 const API_URL = "/proxy/api/v1/chats/a159fe08e2d411efb3910242ac120004"; // 指向後端代理
 const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm"; // 保持不變，後端已使用此 Key
@@ -16,6 +17,14 @@ const DraggableImage = () => {
   const [question, setQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  
+  // 新增的狀態變量
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [chatSessions, setChatSessions] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
   const imgRef = useRef(null);
   const chatEndRef = useRef(null);
   const messageTimeoutRef = useRef(null);
@@ -29,7 +38,11 @@ const DraggableImage = () => {
     // 設定開場白
     const openingMessage =
       "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
-    setHistory([{ question: null, answer: openingMessage }]);
+    
+    // 只在組件初始化時設置開場白
+    if (history.length === 0) {
+      setHistory([{ question: null, answer: openingMessage }]);
+    }
 
     // 每 10 秒顯示一次訊息
     messageTimeoutRef.current = setInterval(() => {
@@ -39,7 +52,22 @@ const DraggableImage = () => {
     }, 10000);
 
     return () => clearInterval(messageTimeoutRef.current);
-  }, [, showChat]);
+  }, [showChat]); // 修復依賴項
+
+  // 新增：當 showChat 變為 true 時獲取歷史對話列表
+  useEffect(() => {
+    if (showChat && chatSessions.length === 0 && !isLoadingSessions) {
+      fetchChatSessions();
+    }
+  }, [showChat, chatSessions.length, isLoadingSessions]);
+
+  // 新增：當 currentChatId 改變時載入對話歷史
+  useEffect(() => {
+    if (currentChatId && currentChatId !== sessionId && !isLoadingHistory) {
+      loadChatHistory(currentChatId);
+      setSessionId(currentChatId);
+    }
+  }, [currentChatId, sessionId, isLoadingHistory]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -58,33 +86,170 @@ const DraggableImage = () => {
       setShowChat(true);
   };
 
-  // 建立新的 session
+  // 新增：獲取歷史對話列表
+  const fetchChatSessions = async () => {
+    if (isLoadingSessions) return; // 防止重複調用
+    
+    try {
+      setIsLoadingSessions(true);
+      console.log("正在獲取對話列表...");
+      
+      // 從 localStorage 獲取用戶 ID
+      const userId = localStorage.getItem('id') || '1';
+      console.log("獲取用戶 ID:", userId);
+      
+      // 先測試 API 連接
+      try {
+        const testResult = await testConnection(userId);
+        console.log("API 連接測試成功:", testResult);
+      } catch (testError) {
+        console.error("API 連接測試失敗:", testError);
+        throw new Error("無法連接到後端 API");
+      }
+      
+      // 使用後端 API 獲取用戶的會話列表
+      const sessions = await getUserSessions(userId);
+      console.log("獲取到的對話數據:", sessions);
+
+      if (sessions.length === 0) {
+        console.log("沒有歷史對話，顯示空狀態");
+        setChatSessions([]);
+        // 不自動創建新對話，讓用戶手動點擊「新對話」按鈕
+        // 設置開場白但不設置 currentChatId
+        const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+        setHistory([{ question: null, answer: openingMessage }]);
+      } else {
+        console.log(`找到 ${sessions.length} 個歷史對話`);
+        
+        // 轉換數據格式以符合 UI 需求
+        const formattedSessions = sessions.map((session, index) => ({
+          id: session.sessionId,
+          name: `對話 ${index + 1} - ${session.userName || '未知用戶'}`
+        }));
+        
+        setChatSessions(formattedSessions);
+        // 設置第一個對話為當前對話
+        if (!currentChatId) {
+          setCurrentChatId(formattedSessions[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("獲取對話列表失敗:", error);
+      console.error("錯誤詳情:", error.response?.data || error.message);
+      setChatSessions([]);
+      // 設置開場白作為默認狀態
+      const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+      setHistory([{ question: null, answer: openingMessage }]);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  // 新增：載入單一對話歷史訊息
+  const loadChatHistory = async (sessionId) => {
+    if (isLoadingHistory) return; // 防止重複調用
+    
+    try {
+      setIsLoadingHistory(true);
+      console.log(`正在載入對話歷史，Session ID: ${sessionId}`);
+      
+      // 從 localStorage 獲取用戶 ID
+      const userId = localStorage.getItem('id') || '1';
+      console.log("使用用戶 ID:", userId);
+      
+      // 使用後端 API 獲取特定會話的歷史訊息
+      const messages = await getRagMessageBySession(userId, sessionId);
+      console.log("獲取到的對話歷史:", messages);
+
+      // 轉換訊息格式為 { question, answer } 格式
+      const conversationHistory = [];
+      const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+      
+      // 先添加開場白
+      conversationHistory.push({ question: null, answer: openingMessage });
+
+      // 將後端返回的訊息轉換為對話格式
+      console.log(`處理 ${messages.length} 條訊息`);
+      
+      if (messages.length > 0) {
+        for (const message of messages) {
+          // 檢查訊息是否同時有輸入和回應
+          if (message.input_message && message.response_message) {
+            conversationHistory.push({
+              question: message.input_message,
+              answer: message.response_message
+            });
+          } else if (message.input_message && !message.response_message) {
+            // 只有問題沒有回答
+            conversationHistory.push({
+              question: message.input_message,
+              answer: "正在處理您的問題..."
+            });
+          } else if (!message.input_message && message.response_message) {
+            // 只有回答沒有問題（系統訊息）
+            conversationHistory.push({
+              question: null,
+              answer: message.response_message
+            });
+          }
+        }
+      }
+
+      console.log("轉換後的對話歷史:", conversationHistory);
+      setHistory(conversationHistory);
+    } catch (error) {
+      console.error("載入對話歷史失敗:", error);
+      // 如果載入失敗，設置為開場白
+      const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+      setHistory([{ question: null, answer: openingMessage }]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // 修改：新對話功能
+  const handleNewConversation = async () => {
+    try {
+      await createNewSession();
+    } catch (error) {
+      console.error("創建新對話失敗:", error);
+    }
+  };
+
+  // 新增：創建新會話的輔助函數
+  const createNewSession = async () => {
+    try {
+      const newSessionId = await createSession();
+      
+      // 重置歷史記錄為開場白
+      const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
+      setHistory([{ question: null, answer: openingMessage }]);
+      
+      // 將新會話添加到會話列表
+      const newSession = {
+        id: newSessionId,
+        name: `新對話 - ${new Date().toLocaleTimeString()}`
+      };
+      setChatSessions(prevSessions => [newSession, ...prevSessions]);
+      
+      return newSessionId;
+    } catch (error) {
+      console.error("創建新會話失敗:", error);
+      throw error;
+    }
+  };
+
+  // 修改：建立新的 session
   const createSession = async () => {
     try {
-      const sessionPayload = { name: "Test Session" };
-      console.log("建立新 session，payload:", sessionPayload);
-      
-      const sessionResponse = await fetch(`${API_URL}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify(sessionPayload),
-      });
+      // 生成一個唯一的 session ID（使用時間戳和隨機數）
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log("生成新的 session ID:", newSessionId);
 
-      if (!sessionResponse.ok) {
-        throw new Error(`Session 請求失敗: ${sessionResponse.statusText}`);
-      }
-      
-      const sessionData = await sessionResponse.json();
-      const newSessionId = sessionData?.data?.id;
-
-      if (!newSessionId) {
-        throw new Error("無法取得 session_id");
-      }
-
+      // 設置當前會話ID
+      setCurrentChatId(newSessionId);
       setSessionId(newSessionId);
+      
       console.log("成功建立 session ID:", newSessionId);
       return newSessionId;
     } catch (error) {
@@ -93,13 +258,13 @@ const DraggableImage = () => {
     }
   };
 
-  // 發送問題並處理回應
+  // 修改：發送問題並處理回應
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!question.trim()) return;
 
     setIsSubmitting(true); // 禁用按鈕，顯示送出中
-    let currentSessionId = sessionId;
+    let currentSessionId = currentChatId;
 
     try {
       // 如果還沒有 session ID，先建立一個
@@ -107,14 +272,14 @@ const DraggableImage = () => {
         currentSessionId = await createSession();
       }
 
-      // 發送對話請求
+      // 發送對話請求到 RAGFlow（但不傳送 session_id，讓 RAGFlow 獨立處理）
       const payload = {
         question,
         stream: false,
-        session_id: currentSessionId,
+        // 注意：不傳送 session_id，因為我們使用自己的 sessionId 管理
       };
 
-      console.log("使用 session ID:", currentSessionId, "發送問題:", question);
+      console.log("發送問題到 RAGFlow，自己的 session ID:", currentSessionId, "問題:", question);
 
       const response = await fetch(`${API_URL}/completions`, {
         method: "POST",
@@ -169,6 +334,7 @@ const DraggableImage = () => {
       // 如果是因為 session 問題，重置 sessionId 讓下次重新建立
       if (error.message.includes("session")) {
         setSessionId(null);
+        setCurrentChatId(null);
       }
     } finally {
       setIsSubmitting(false); // 啟用按鈕
@@ -179,6 +345,14 @@ const DraggableImage = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
+
+  // 新增：處理對話項目點擊
+  const handleChatSessionClick = (sessionId) => {
+    console.log(`切換到對話: ${sessionId}`);
+    if (sessionId !== currentChatId && !isLoadingHistory) {
+      setCurrentChatId(sessionId);
+    }
+  };
 
   return (
     <>
@@ -225,73 +399,215 @@ const DraggableImage = () => {
         <div
           style={{
             position: "fixed", // 固定位置
-            left: `${position.x - 350}px`, // 讓對話框顯示在圖片左側
+            left: `${position.x - (showSidebar ? 550 : 350)}px`, // 根據側邊欄狀態調整位置
             top: `${position.y - 200}px`, // 讓對話框與圖片對齊
-            width: "350px", // 設定對話框寬度
+            width: showSidebar ? "550px" : "350px", // 根據側邊欄狀態調整寬度
             height: "500px", // 設定對話框高度
             backgroundColor: "white", // 設定背景顏色
             borderRadius: "10px", // 設定圓角
             boxShadow: "0px 4px 10px rgba(0,0,0,0.2)", // 設定陰影效果
-            padding: "10px", // 內距
             display: "flex", // 使用 flex 排版
-            flexDirection: "column", // 垂直排列內容
+            flexDirection: "row", // 水平排列
             zIndex: 1002, // 層級最高，確保對話框顯示在最上層
+            overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-            <h3 style={{ fontSize: "16px", color: "#5BA491" }}>科學助手</h3>
-            <button onClick={() => setShowChat(false)} style={{ border: "none", background: "transparent", fontSize: "16px", cursor: "pointer", color: "#5BA491" }}>✖</button>
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "5px", fontSize: "14px" }}>
-            {history.map((item, index) => (
-              <div key={index} className="space-y-4">
-              {item.question && (
-                <div className="flex justify-end">
-                  <div
-                    className="p-3 rounded-lg shadow max-w-lg"
-                    style={{ backgroundColor: "#5BA491", color: "white" }}
-                  >
-                    <p>{item.question}</p>
-                  </div>
-                </div>
-              )}
-              {item.answer && (
-                <div className="flex justify-start">
-                  <div
-                    className="p-3 rounded-lg shadow max-w-lg"
-                    style={{ backgroundColor: "#F0F0F0", color: "#333" }}
-                  >
-                    <p>{item.answer}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            ))}
-            <div ref={chatEndRef}></div>
-          </div>
+          {/* 側邊欄 */}
+          {showSidebar && (
+            <div
+              style={{
+                width: "200px",
+                backgroundColor: "#E0E0E0",
+                borderTopLeftRadius: "10px",
+                borderBottomLeftRadius: "10px",
+                padding: "10px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {/* 新對話按鈕 */}
+              <button
+                onClick={handleNewConversation}
+                style={{
+                  backgroundColor: "#5BA491",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "5px",
+                  padding: "8px 12px",
+                  marginBottom: "10px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#4a9076"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "#5BA491"}
+              >
+                + 新對話
+              </button>
 
-          <form
-            onSubmit={handleSubmit}
-            className="p-4 bg-white border-t flex items-center"
+              {/* 對話列表 */}
+              <div style={{ flex: 1, overflowY: "auto" }}>
+                {isLoadingSessions ? (
+                  <div style={{ 
+                    padding: "20px", 
+                    textAlign: "center", 
+                    color: "#666", 
+                    fontSize: "13px" 
+                  }}>
+                    載入對話列表...
+                  </div>
+                ) : chatSessions.length === 0 ? (
+                  <div style={{ 
+                    padding: "20px", 
+                    textAlign: "center", 
+                    color: "#666", 
+                    fontSize: "13px" 
+                  }}>
+                    暫無對話記錄
+                  </div>
+                ) : (
+                  chatSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      onClick={() => handleChatSessionClick(session.id)}
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "5px",
+                        marginBottom: "5px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        backgroundColor: currentChatId === session.id ? "#5BA491" : "transparent",
+                        color: currentChatId === session.id ? "white" : "#333",
+                        transition: "all 0.2s ease",
+                        wordBreak: "break-word",
+                      }}
+                      onMouseOver={(e) => {
+                        if (currentChatId !== session.id) {
+                          e.target.style.backgroundColor = "#D0D0D0";
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (currentChatId !== session.id) {
+                          e.target.style.backgroundColor = "transparent";
+                        }
+                      }}
+                    >
+                      {session.name || `對話 ${session.id.substring(0, 8)}`}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 主聊天區域 */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              padding: "10px",
+            }}
+          >
+            {/* 頂部工具欄 */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              {/* 側邊欄切換按鈕 */}
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  color: "#5BA491",
+                  padding: "2px 6px",
+                }}
+              >
+                {showSidebar ? "◀" : "▶"}
+              </button>
+              
+              <h3 style={{ fontSize: "16px", color: "#5BA491", margin: 0 }}>科學助手</h3>
+              
+              {/* 關閉按鈕 */}
+              <button 
+                onClick={() => setShowChat(false)} 
+                style={{ 
+                  border: "none", 
+                  background: "transparent", 
+                  fontSize: "16px", 
+                  cursor: "pointer", 
+                  color: "#5BA491" 
+                }}
+              >
+                ✖
+              </button>
+            </div>
+
+            {/* 聊天內容區域 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "5px", fontSize: "14px" }}>
+              {isLoadingHistory ? (
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "center", 
+                  alignItems: "center", 
+                  height: "100%", 
+                  color: "#666" 
+                }}>
+                  載入對話歷史...
+                </div>
+              ) : (
+                history.map((item, index) => (
+                  <div key={index} className="space-y-4">
+                  {item.question && (
+                    <div className="flex justify-end">
+                      <div
+                        className="p-3 rounded-lg shadow max-w-lg"
+                        style={{ backgroundColor: "#5BA491", color: "white" }}
+                      >
+                        <p>{item.question}</p>
+                      </div>
+                    </div>
+                  )}
+                  {item.answer && (
+                    <div className="flex justify-start">
+                      <div
+                        className="p-3 rounded-lg shadow max-w-lg"
+                        style={{ backgroundColor: "#F0F0F0", color: "#333" }}
+                      >
+                        <p>{item.answer}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                ))
+              )}
+              <div ref={chatEndRef}></div>
+            </div>
+
+            {/* 輸入區域 */}
+            <form
+              onSubmit={handleSubmit}
+              className="p-4 bg-white border-t flex items-center"
+              style={{ padding: "10px 0 0 0", borderTop: "1px solid #E0E0E0" }}
             >
-            <input
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="輸入您的問題..."
-                className="flex-1 p-2 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
-            />
-            <button
-                type="submit"
-                className={`py-1 px-3 rounded-lg shadow transition-all text-white ${
-                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#5BA491] hover:bg-[#4a9076]"
-                }`}
-                disabled={isSubmitting}
-            >
-                {isSubmitting ? "送出中..." : "送出"}
-            </button>
+              <input
+                  type="text"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="輸入您的問題..."
+                  className="flex-1 p-2 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
+              />
+              <button
+                  type="submit"
+                  className={`py-1 px-3 rounded-lg shadow transition-all text-white ${
+                  isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#5BA491] hover:bg-[#4a9076]"
+                  }`}
+                  disabled={isSubmitting}
+              >
+                  {isSubmitting ? "送出中..." : "送出"}
+              </button>
             </form>
+          </div>
         </div>
       )}
     </>

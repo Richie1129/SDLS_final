@@ -8,6 +8,12 @@ const ragApi = axios.create({
     },
 })
 
+// 測試 API 連接
+export const testConnection = async (userId) => {
+    const response = await ragApi.get(`/test/${userId}`);
+    return response.data;
+}
+
 // 取得使用者所有 RAG 訊息歷史
 export const getRAGHistory = async (userId) => {
     const response = await ragApi.get(`/history/${userId}`);
