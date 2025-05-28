@@ -27,8 +27,24 @@ exports.getRagMessageBySession = async (req, res) => {
     console.log("取得特定會話的 RAG 訊息，userId:", userId, "sessionId:", sessionId);
 
     try {
+        // 先嘗試取得基本欄位
+        let attributes = ['id', 'userId', 'userName', 'input_message', 'response_message', 'sessionId', 'createdAt'];
+        
+        // 檢查是否存在 ragflow_session_id 欄位
+        try {
+            const tableDescription = await Rag_message.describe();
+            if (tableDescription.ragflow_session_id) {
+                attributes.push('ragflow_session_id');
+                console.log("已包含 ragflow_session_id 欄位");
+            } else {
+                console.log("ragflow_session_id 欄位尚未存在，使用基本欄位");
+            }
+        } catch (describeError) {
+            console.log("無法檢查表結構，使用基本欄位:", describeError.message);
+        }
+
         const messages = await Rag_message.findAll({
-            attributes: ['id', 'userId', 'userName', 'input_message', 'response_message', 'sessionId', 'createdAt'],
+            attributes: attributes,
             where: { 
                 userId: userId,
                 sessionId: sessionId 
@@ -40,7 +56,7 @@ exports.getRagMessageBySession = async (req, res) => {
         res.status(200).json(messages);
     } catch (err) {
         console.error("取得會話歷史紀錄錯誤:", err);
-        res.status(500).json({ error: '無法取得會話歷史紀錄' });
+        res.status(500).json({ error: '無法取得會話歷史紀錄', details: err.message });
     }
 };
 
@@ -104,5 +120,46 @@ exports.testConnection = async (req, res) => {
     } catch (err) {
         console.error("測試連接錯誤:", err);
         res.status(500).json({ error: '測試連接失敗', details: err.message });
+    }
+};
+
+// 根據 userId 和 sessionId 取得 RAGFlow session ID
+exports.getRagflowSessionId = async (req, res) => {
+    const { userId, sessionId } = req.params;
+    console.log("取得 RAGFlow session ID，userId:", userId, "sessionId:", sessionId);
+
+    try {
+        // 先檢查 ragflow_session_id 欄位是否存在
+        const tableDescription = await Rag_message.describe();
+        
+        if (!tableDescription.ragflow_session_id) {
+            console.log("ragflow_session_id 欄位尚未存在於資料庫中");
+            return res.status(200).json({ ragflow_session_id: null });
+        }
+
+        const message = await Rag_message.findOne({
+            attributes: ['ragflow_session_id'],
+            where: { 
+                userId: userId,
+                sessionId: sessionId,
+                ragflow_session_id: { [require('sequelize').Op.not]: null }
+            },
+            order: [['createdAt', 'ASC']]
+        });
+
+        const ragflowSessionId = message ? message.ragflow_session_id : null;
+        console.log("找到的 RAGFlow session ID:", ragflowSessionId);
+        
+        res.status(200).json({ ragflow_session_id: ragflowSessionId });
+    } catch (err) {
+        console.error("取得 RAGFlow session ID 錯誤:", err);
+        
+        // 如果是因為欄位不存在的錯誤，返回 null 而不是錯誤
+        if (err.message && err.message.includes('column') && err.message.includes('ragflow_session_id')) {
+            console.log("ragflow_session_id 欄位不存在，返回 null");
+            return res.status(200).json({ ragflow_session_id: null });
+        }
+        
+        res.status(500).json({ error: '無法取得 RAGFlow session ID', details: err.message });
     }
 };

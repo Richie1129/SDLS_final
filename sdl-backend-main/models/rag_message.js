@@ -30,6 +30,10 @@ const Rag_message = sequelize.define('Rag_message', {
     sessionId: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    ragflow_session_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
 });
 

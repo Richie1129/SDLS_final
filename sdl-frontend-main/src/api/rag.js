@@ -32,6 +32,12 @@ export const getRagMessageBySession = async (userId, sessionId) => {
     return response.data;
 }
 
+// 根據 userId 和 sessionId 取得 RAGFlow session ID
+export const getRagflowSessionId = async (userId, sessionId) => {
+    const response = await ragApi.get(`/ragflow-session/${userId}/${sessionId}`);
+    return response.data;
+}
+
 // 根據 userId 取得所有會話列表
 export const getUserSessions = async (userId) => {
     const response = await ragApi.get(`/sessions/${userId}`);

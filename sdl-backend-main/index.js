@@ -135,6 +135,10 @@ io.on("connection", (socket) => {
             const sessionId = data.sessionId || null;
             console.log("使用的 sessionId:", sessionId); // 記錄實際使用的 sessionId
             
+            // 獲取 RAGFlow session ID（從 RAGFlow 回應中提取）
+            const ragflowSessionId = data.ragflowSessionId || null;
+            console.log("使用的 RAGFlow sessionId:", ragflowSessionId);
+            
             if (data.messageType === 'input') {
                 // 當接收到 input_message 時，創建新的資料庫紀錄，並儲存其 ID
                 const newMessage = await Rag_message.create({
@@ -154,7 +158,8 @@ io.on("connection", (socket) => {
                         response_message: data.message,  // 更新 response_message
                         author: data.author || 'system',  // 如果未提供 author，設為 'system'
                         userName: userName,  // 更新用戶名稱
-                        sessionId: sessionId  // 更新 sessionId
+                        sessionId: sessionId,  // 更新 sessionId
+                        ragflow_session_id: ragflowSessionId  // 更新 RAGFlow session ID
                     },
                     {
                         where: {

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { socket } from "../../../utils/socket";
-import { getUserSessions, getRagMessageBySession, testConnection } from "../../../api/rag";
+import { getUserSessions, getRagMessageBySession, testConnection, getRagflowSessionId } from "../../../api/rag";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API_URL = "/proxy/api/v1/chats/a159fe08e2d411efb3910242ac120004"; // 指向後端代理
 const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm"; // 保持不變，後端已使用此 Key
@@ -24,7 +26,8 @@ const DraggableImage = () => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  
+  const [currentRagflowSessionId, setCurrentRagflowSessionId] = useState(null); // 當前對話的 RAGFlow session ID
+
   const imgRef = useRef(null);
   const chatEndRef = useRef(null);
   const messageTimeoutRef = useRef(null);
@@ -41,7 +44,7 @@ const DraggableImage = () => {
     
     // 只在組件初始化時設置開場白
     if (history.length === 0) {
-      setHistory([{ question: null, answer: openingMessage }]);
+    setHistory([{ question: null, answer: openingMessage }]);
     }
 
     // 每 10 秒顯示一次訊息
@@ -157,9 +160,26 @@ const DraggableImage = () => {
       const userId = localStorage.getItem('id') || '1';
       console.log("使用用戶 ID:", userId);
       
-      // 使用後端 API 獲取特定會話的歷史訊息
-      const messages = await getRagMessageBySession(userId, sessionId);
+      // 並行獲取對話歷史和 RAGFlow session ID
+      const [messages, ragflowSessionData] = await Promise.all([
+        getRagMessageBySession(userId, sessionId),
+        getRagflowSessionId(userId, sessionId).catch(err => {
+          console.warn("獲取 RAGFlow session ID 失敗:", err.message);
+          return { ragflow_session_id: null };
+        })
+      ]);
+      
       console.log("獲取到的對話歷史:", messages);
+      console.log("獲取到的 RAGFlow session 數據:", ragflowSessionData);
+      
+      // 設置當前對話的 RAGFlow session ID
+      if (ragflowSessionData && ragflowSessionData.ragflow_session_id) {
+        console.log(`載入歷史對話的 RAGFlow session ID: ${ragflowSessionData.ragflow_session_id}`);
+        setCurrentRagflowSessionId(ragflowSessionData.ragflow_session_id);
+      } else {
+        console.log("此對話尚未有 RAGFlow session ID，將在下次發送訊息時創建");
+        setCurrentRagflowSessionId(null);
+      }
 
       // 轉換訊息格式為 { question, answer } 格式
       const conversationHistory = [];
@@ -202,6 +222,7 @@ const DraggableImage = () => {
       // 如果載入失敗，設置為開場白
       const openingMessage = "嗨！我是一位專門輔導高中生科學探究與實作的自然科學導師。我會用適合高中生的語言，保持專業的同時，幫助你探索自然科學的奧秘，並引導你選擇一個有興趣的科展主題，以及更深入了解你的研究問題。什麼可以幫到你的嗎？";
       setHistory([{ question: null, answer: openingMessage }]);
+      setCurrentRagflowSessionId(null);
     } finally {
       setIsLoadingHistory(false);
     }
@@ -210,6 +231,9 @@ const DraggableImage = () => {
   // 修改：新對話功能
   const handleNewConversation = async () => {
     try {
+      // 重置 RAGFlow session ID
+      setCurrentRagflowSessionId(null);
+      
       await createNewSession();
     } catch (error) {
       console.error("創建新對話失敗:", error);
@@ -232,6 +256,9 @@ const DraggableImage = () => {
       };
       setChatSessions(prevSessions => [newSession, ...prevSessions]);
       
+      // 確保新對話沒有舊的 RAGFlow session 映射
+      console.log(`新對話 ${newSessionId} 已創建，將在首次發送訊息時創建對應的 RAGFlow session`);
+      
       return newSessionId;
     } catch (error) {
       console.error("創建新會話失敗:", error);
@@ -239,18 +266,17 @@ const DraggableImage = () => {
     }
   };
 
-  // 修改：建立新的 session
+  // 修改：建立新的 session，使用本地 ID
   const createSession = async () => {
     try {
-      // 生成一個唯一的 session ID（使用時間戳和隨機數）
+      // 生成一個唯一的本地 session ID
       const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log("生成新的 session ID:", newSessionId);
-
+      console.log("生成新的本地 session ID:", newSessionId);
+      
       // 設置當前會話ID
       setCurrentChatId(newSessionId);
       setSessionId(newSessionId);
       
-      console.log("成功建立 session ID:", newSessionId);
       return newSessionId;
     } catch (error) {
       console.error("建立 session 失敗:", error);
@@ -272,14 +298,21 @@ const DraggableImage = () => {
         currentSessionId = await createSession();
       }
 
-      // 發送對話請求到 RAGFlow（但不傳送 session_id，讓 RAGFlow 獨立處理）
+      // 發送對話請求到 RAGFlow
       const payload = {
         question,
         stream: false,
-        // 注意：不傳送 session_id，因為我們使用自己的 sessionId 管理
       };
 
-      console.log("發送問題到 RAGFlow，自己的 session ID:", currentSessionId, "問題:", question);
+      // 如果有保存的 RAGFlow session ID，則使用它（歷史對話）
+      if (currentRagflowSessionId) {
+        payload.session_id = currentRagflowSessionId;
+        console.log("使用歷史對話的 RAGFlow session ID:", currentRagflowSessionId);
+      } else {
+        console.log("新對話或首次發送，讓 RAGFlow 自動創建 session");
+      }
+
+      console.log("發送到 RAGFlow 的 payload:", payload);
 
       const response = await fetch(`${API_URL}/completions`, {
         method: "POST",
@@ -290,8 +323,60 @@ const DraggableImage = () => {
         body: JSON.stringify(payload),
       });
       
-      const data = await response.json();
+      console.log("RAGFlow 響應狀態:", response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`RAGFlow API 錯誤: ${response.status} ${response.statusText}`);
+      }
+      
+      // 獲取響應文本並解析
+      const responseText = await response.text();
+      console.log("RAGFlow 響應文本:", responseText);
+      
+      // 解析 RAGFlow 的 SSE 格式響應
+      let data = null;
+      const lines = responseText.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          try {
+            const jsonStr = line.substring(5); // 移除 "data:" 前綴
+            const parsed = JSON.parse(jsonStr);
+            
+            // 如果這行包含 answer 和 session_id，使用它
+            if (parsed.data && typeof parsed.data === 'object' && parsed.data.answer) {
+              data = parsed;
+              break;
+            }
+          } catch (parseError) {
+            console.warn("解析 JSON 行失敗:", line, parseError);
+          }
+        }
+      }
+      
+      // 如果沒有找到有效的數據，嘗試直接解析整個響應
+      if (!data) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error("無法解析響應:", responseText, parseError);
+          throw new Error("無法解析 RAGFlow 響應");
+        }
+      }
+      
+      console.log("解析後的 RAGFlow 數據:", data);
+      
       const answer = data?.data?.answer || "無法取得回答";
+      const returnedSessionId = data?.data?.session_id;
+      
+      console.log("提取的答案:", answer);
+      console.log("RAGFlow 返回的 session_id:", returnedSessionId);
+
+      // 如果 RAGFlow 返回了新的 session ID，更新我們的記錄
+      if (returnedSessionId && returnedSessionId !== currentRagflowSessionId) {
+        console.log("更新 RAGFlow session ID:", returnedSessionId);
+        setCurrentRagflowSessionId(returnedSessionId);
+      }
 
       // 更新訊息記錄
       setHistory((prevHistory) => [...prevHistory, { question, answer }]);
@@ -324,17 +409,28 @@ const DraggableImage = () => {
           messageId: storedData.id,
           room: projectId,
           userName: userName,
-          sessionId: currentSessionId
+          sessionId: currentSessionId,
+          ragflowSessionId: returnedSessionId // 保存 RAGFlow 返回的 session ID
         });
       });
 
       setQuestion(""); // 清空輸入框
     } catch (error) {
       console.error("處理訊息失敗:", error);
+      console.error("錯誤詳情:", error.stack);
+      
+      // 顯示錯誤訊息給用戶
+      const errorMessage = `處理請求時發生錯誤: ${error.message}`;
+      setHistory((prevHistory) => [...prevHistory, { 
+        question, 
+        answer: errorMessage 
+      }]);
+      
       // 如果是因為 session 問題，重置 sessionId 讓下次重新建立
       if (error.message.includes("session")) {
         setSessionId(null);
         setCurrentChatId(null);
+        setCurrentRagflowSessionId(null);
       }
     } finally {
       setIsSubmitting(false); // 啟用按鈕
@@ -510,7 +606,7 @@ const DraggableImage = () => {
             }}
           >
             {/* 頂部工具欄 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
               {/* 側邊欄切換按鈕 */}
               <button
                 onClick={() => setShowSidebar(!showSidebar)}
@@ -541,10 +637,10 @@ const DraggableImage = () => {
               >
                 ✖
               </button>
-            </div>
+          </div>
 
             {/* 聊天內容區域 */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "5px", fontSize: "14px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "5px", fontSize: "14px" }}>
               {isLoadingHistory ? (
                 <div style={{ 
                   display: "flex", 
@@ -557,55 +653,88 @@ const DraggableImage = () => {
                 </div>
               ) : (
                 history.map((item, index) => (
-                  <div key={index} className="space-y-4">
-                  {item.question && (
-                    <div className="flex justify-end">
-                      <div
-                        className="p-3 rounded-lg shadow max-w-lg"
-                        style={{ backgroundColor: "#5BA491", color: "white" }}
-                      >
-                        <p>{item.question}</p>
-                      </div>
-                    </div>
-                  )}
-                  {item.answer && (
-                    <div className="flex justify-start">
-                      <div
-                        className="p-3 rounded-lg shadow max-w-lg"
-                        style={{ backgroundColor: "#F0F0F0", color: "#333" }}
-                      >
-                        <p>{item.answer}</p>
-                      </div>
-                    </div>
-                  )}
+              <div key={index} className="space-y-4">
+              {item.question && (
+                <div className="flex justify-end">
+                  <div
+                    className="p-3 rounded-lg shadow max-w-lg"
+                    style={{ backgroundColor: "#5BA491", color: "white" }}
+                  >
+                    <p>{item.question}</p>
+                  </div>
                 </div>
+              )}
+              {item.answer && (
+                <div className="flex justify-start">
+                  <div
+                    className="p-3 rounded-lg shadow max-w-lg"
+                    style={{ backgroundColor: "#F0F0F0", color: "#333" }}
+                  >
+                        <div className="markdown-content">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              // Custom components for better styling
+                              code: ({ node, className, children, ...props }) => {
+                                const match = /language-(\w+)/.exec(className || '');
+                                return match ? (
+                                  <pre className="bg-gray-100 p-3 rounded my-2 overflow-x-auto">
+                                    <code className="bg-transparent text-gray-800 text-xs" {...props}>
+                                      {children}
+                                    </code>
+                                  </pre>
+                                ) : (
+                                  <code className="bg-gray-200 text-gray-800 px-1 py-0.5 rounded text-xs" {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              },
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              ul: ({ children }) => <ul className="mb-2 pl-4 list-disc">{children}</ul>,
+                              ol: ({ children }) => <ol className="mb-2 pl-4 list-decimal">{children}</ol>,
+                              li: ({ children }) => <li className="mb-1">{children}</li>,
+                              h1: ({ children }) => <h1 className="text-lg font-semibold mt-4 mb-2 first:mt-0">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-base font-semibold mt-4 mb-2 first:mt-0">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-sm font-semibold mt-4 mb-2 first:mt-0">{children}</h3>,
+                              blockquote: ({ children }) => <blockquote className="border-l-4 border-blue-300 pl-4 my-2 italic">{children}</blockquote>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              // 如果需要，可以在這裡添加更多 HTML 元素的自定義組件
+                            }}
+                          >
+                            {item.answer}
+                          </ReactMarkdown>
+                        </div>
+                  </div>
+                </div>
+              )}
+            </div>
                 ))
               )}
-              <div ref={chatEndRef}></div>
-            </div>
+            <div ref={chatEndRef}></div>
+          </div>
 
             {/* 輸入區域 */}
-            <form
-              onSubmit={handleSubmit}
-              className="p-4 bg-white border-t flex items-center"
+          <form
+            onSubmit={handleSubmit}
+            className="p-4 bg-white border-t flex items-center"
               style={{ padding: "10px 0 0 0", borderTop: "1px solid #E0E0E0" }}
             >
-              <input
-                  type="text"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="輸入您的問題..."
-                  className="flex-1 p-2 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
-              />
-              <button
-                  type="submit"
-                  className={`py-1 px-3 rounded-lg shadow transition-all text-white ${
-                  isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#5BA491] hover:bg-[#4a9076]"
-                  }`}
-                  disabled={isSubmitting}
-              >
-                  {isSubmitting ? "送出中..." : "送出"}
-              </button>
+            <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="輸入您的問題..."
+                className="flex-1 p-2 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 mr-4"
+            />
+            <button
+                type="submit"
+                className={`py-1 px-3 rounded-lg shadow transition-all text-white ${
+                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#5BA491] hover:bg-[#4a9076]"
+                }`}
+                disabled={isSubmitting}
+            >
+                {isSubmitting ? "送出中..." : "送出"}
+            </button>
             </form>
           </div>
         </div>

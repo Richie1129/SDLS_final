@@ -11,6 +11,9 @@ router.get('/history/:userId', controller.getRagMessageHistory);
 // 根據 userId 和 sessionId 取得特定會話的訊息歷史
 router.get('/session/:userId/:sessionId', controller.getRagMessageBySession);
 
+// 根據 userId 和 sessionId 取得 RAGFlow session ID
+router.get('/ragflow-session/:userId/:sessionId', controller.getRagflowSessionId);
+
 // 根據 userId 取得所有會話列表
 router.get('/sessions/:userId', controller.getUserSessions);
 
