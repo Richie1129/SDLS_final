@@ -131,13 +131,18 @@ io.on("connection", (socket) => {
             const userName = data.userName || data.author || "未知用戶";
             console.log("使用的用戶名稱:", userName); // 記錄實際使用的用戶名稱
             
+            // 獲取 sessionId，如果沒有則設為 null
+            const sessionId = data.sessionId || null;
+            console.log("使用的 sessionId:", sessionId); // 記錄實際使用的 sessionId
+            
             if (data.messageType === 'input') {
                 // 當接收到 input_message 時，創建新的資料庫紀錄，並儲存其 ID
                 const newMessage = await Rag_message.create({
                     input_message: data.message,  // 儲存 input_message
                     author: data.author,
                     userId: userId,  // 使用確認過的 userId
-                    userName: userName  // 儲存用戶名稱
+                    userName: userName,  // 儲存用戶名稱
+                    sessionId: sessionId  // 儲存 sessionId
                 });
     
                 // 將訊息的 ID 返回前端，便於後續 response_message 更新
@@ -148,7 +153,8 @@ io.on("connection", (socket) => {
                     {
                         response_message: data.message,  // 更新 response_message
                         author: data.author || 'system',  // 如果未提供 author，設為 'system'
-                        userName: userName  // 更新用戶名稱
+                        userName: userName,  // 更新用戶名稱
+                        sessionId: sessionId  // 更新 sessionId
                     },
                     {
                         where: {
@@ -637,7 +643,7 @@ app.use('/api/stage', require('./routes/stage'))
 app.use('/api/chatroom', require('./routes/chatroom'))
 app.use('/api/question', require('./routes/question'))
 app.use('/api/announcements', require('./routes/announcement'));
-// app.use('/rag_message', require('./routes/rag_message'));
+app.use('/api/rag_message', require('./routes/rag_message'));
 
 //error handling
 app.use((error, req, res, next) => {

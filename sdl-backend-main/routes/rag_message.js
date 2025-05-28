@@ -1,8 +1,14 @@
-// //backend routes for rag_message
-// const router = require('express').Router();
-// const controller = require('../controllers/rag_message'); // 确保路径正确
+//backend routes for rag_message
+const router = require('express').Router();
+const controller = require('../controllers/rag_message'); // 确保路径正确
 
-// // 获取聊天室历史消息
-// router.get('/history/:userId', controller.getRagMessageHistory);
+// 获取用戶所有 RAG 訊息歷史
+router.get('/history/:userId', controller.getRagMessageHistory);
 
-// module.exports = router;
+// 根據 userId 和 sessionId 取得特定會話的訊息歷史
+router.get('/session/:userId/:sessionId', controller.getRagMessageBySession);
+
+// 根據 userId 取得所有會話列表
+router.get('/sessions/:userId', controller.getUserSessions);
+
+module.exports = router;

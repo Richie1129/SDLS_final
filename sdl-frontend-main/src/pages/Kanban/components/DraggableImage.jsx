@@ -15,6 +15,7 @@ const DraggableImage = () => {
   const [history, setHistory] = useState([]);
   const [question, setQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const imgRef = useRef(null);
   const chatEndRef = useRef(null);
   const messageTimeoutRef = useRef(null);
@@ -57,25 +58,19 @@ const DraggableImage = () => {
       setShowChat(true);
   };
 
-  // 發送問題並處理回應
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!question.trim()) return;
-
-    setIsSubmitting(true); // 禁用按鈕，顯示送出中
-    let sessionId;
-
+  // 建立新的 session
+  const createSession = async () => {
     try {
-      // Step 1: 獲取 session_id
-      const sessionPayload = { name: "Test Session" }; // chat_id
-      console.log("sessionPayload", sessionPayload)
+      const sessionPayload = { name: "Test Session" };
+      console.log("建立新 session，payload:", sessionPayload);
+      
       const sessionResponse = await fetch(`${API_URL}/sessions`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json", // 確保 Content-Type 正確
+          "Content-Type": "application/json",
           Authorization: `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify(sessionPayload), // chat_id
+        body: JSON.stringify(sessionPayload),
       });
 
       if (!sessionResponse.ok) {
@@ -83,35 +78,53 @@ const DraggableImage = () => {
       }
       
       const sessionData = await sessionResponse.json();
-      sessionId = sessionData?.data?.id;
+      const newSessionId = sessionData?.data?.id;
 
-      if (!sessionId) {
-        console.error("無法取得 session_id");
-        setIsSubmitting(false);
-        return;
+      if (!newSessionId) {
+        throw new Error("無法取得 session_id");
       }
+
+      setSessionId(newSessionId);
+      console.log("成功建立 session ID:", newSessionId);
+      return newSessionId;
     } catch (error) {
       console.error("建立 session 失敗:", error);
-      setIsSubmitting(false);
-      return;
+      throw error;
     }
+  };
+
+  // 發送問題並處理回應
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+
+    setIsSubmitting(true); // 禁用按鈕，顯示送出中
+    let currentSessionId = sessionId;
 
     try {
-      // Step 2: 發送對話請求
+      // 如果還沒有 session ID，先建立一個
+      if (!currentSessionId) {
+        currentSessionId = await createSession();
+      }
+
+      // 發送對話請求
       const payload = {
         question,
         stream: false,
-        session_id: sessionId,
+        session_id: currentSessionId,
       };
+
+      console.log("使用 session ID:", currentSessionId, "發送問題:", question);
 
       const response = await fetch(`${API_URL}/completions`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json", // 確保 Content-Type 正確
+          "Content-Type": "application/json",
           Authorization: `Bearer ${API_KEY}`,
         },
         body: JSON.stringify(payload),
       });
+      
       const data = await response.json();
       const answer = data?.data?.answer || "無法取得回答";
 
@@ -132,7 +145,8 @@ const DraggableImage = () => {
         author: userName || "用戶",
         creator: userId,
         room: projectId,
-        userName: userName
+        userName: userName,
+        sessionId: currentSessionId
       });
 
       // 處理後端回傳的訊息 ID，並將回答存回 socket
@@ -144,13 +158,18 @@ const DraggableImage = () => {
           creator: userId,
           messageId: storedData.id,
           room: projectId,
-          userName: userName
+          userName: userName,
+          sessionId: currentSessionId
         });
       });
 
       setQuestion(""); // 清空輸入框
     } catch (error) {
-      console.error("獲取回答失敗:", error);
+      console.error("處理訊息失敗:", error);
+      // 如果是因為 session 問題，重置 sessionId 讓下次重新建立
+      if (error.message.includes("session")) {
+        setSessionId(null);
+      }
     } finally {
       setIsSubmitting(false); // 啟用按鈕
     }

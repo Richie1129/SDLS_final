@@ -26,6 +26,10 @@ const Rag_message = sequelize.define('Rag_message', {
             model: 'users',
             key: 'id'
         }
+    },
+    sessionId: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
 });
 
