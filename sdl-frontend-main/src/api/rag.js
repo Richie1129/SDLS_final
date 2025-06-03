@@ -49,16 +49,13 @@ export const deleteSession = async (sessionId) => {
     const API_URL = "/proxy/api/v1/chats/a159fe08e2d411efb3910242ac120004";
     const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm";
     
-    // 調用 RAGFlow API 刪除會話 - 使用正確的端點路徑
-    const response = await fetch(`${API_URL}/sessions`, {
+    // 調用 RAGFlow API 刪除會話 - 將 sessionId 包含在 URL 路徑中
+    const response = await fetch(`${API_URL}/sessions/${sessionId}`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify({
-            ids: [sessionId]
-        }),
     });
     
     if (!response.ok) {
