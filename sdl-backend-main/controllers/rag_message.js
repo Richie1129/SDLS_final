@@ -129,37 +129,62 @@ exports.getRagflowSessionId = async (req, res) => {
     console.log("取得 RAGFlow session ID，userId:", userId, "sessionId:", sessionId);
 
     try {
-        // 先檢查 ragflow_session_id 欄位是否存在
-        const tableDescription = await Rag_message.describe();
+        // 先嘗試取得基本欄位
+        let attributes = ['ragflow_session_id'];
         
-        if (!tableDescription.ragflow_session_id) {
-            console.log("ragflow_session_id 欄位尚未存在於資料庫中");
-            return res.status(200).json({ ragflow_session_id: null });
-        }
-
         const message = await Rag_message.findOne({
-            attributes: ['ragflow_session_id'],
+            attributes: attributes,
             where: { 
                 userId: userId,
-                sessionId: sessionId,
-                ragflow_session_id: { [require('sequelize').Op.not]: null }
+                sessionId: sessionId 
             },
-            order: [['createdAt', 'ASC']]
+            order: [['createdAt', 'DESC']]
         });
 
-        const ragflowSessionId = message ? message.ragflow_session_id : null;
-        console.log("找到的 RAGFlow session ID:", ragflowSessionId);
-        
-        res.status(200).json({ ragflow_session_id: ragflowSessionId });
+        if (message && message.ragflow_session_id) {
+            console.log("找到 RAGFlow session ID:", message.ragflow_session_id);
+            res.status(200).json({ ragflow_session_id: message.ragflow_session_id });
+        } else {
+            console.log("未找到對應的 RAGFlow session ID");
+            res.status(404).json({ error: '未找到對應的 RAGFlow session ID' });
+        }
     } catch (err) {
         console.error("取得 RAGFlow session ID 錯誤:", err);
-        
-        // 如果是因為欄位不存在的錯誤，返回 null 而不是錯誤
-        if (err.message && err.message.includes('column') && err.message.includes('ragflow_session_id')) {
-            console.log("ragflow_session_id 欄位不存在，返回 null");
-            return res.status(200).json({ ragflow_session_id: null });
-        }
-        
         res.status(500).json({ error: '無法取得 RAGFlow session ID', details: err.message });
+    }
+};
+
+// 新增：根據 userId 和 sessionId 刪除特定會話的所有訊息
+exports.deleteSessionMessages = async (req, res) => {
+    const { userId, sessionId } = req.params;
+    console.log("刪除會話訊息，userId:", userId, "sessionId:", sessionId);
+
+    try {
+        // 刪除該會話的所有訊息
+        const deletedCount = await Rag_message.destroy({
+            where: { 
+                userId: userId,
+                sessionId: sessionId 
+            }
+        });
+
+        console.log("已刪除的訊息數量:", deletedCount);
+        
+        if (deletedCount > 0) {
+            res.status(200).json({ 
+                message: "會話訊息已成功刪除", 
+                deletedCount: deletedCount 
+            });
+        } else {
+            res.status(404).json({ 
+                message: "未找到要刪除的會話訊息" 
+            });
+        }
+    } catch (err) {
+        console.error("刪除會話訊息錯誤:", err);
+        res.status(500).json({ 
+            error: '無法刪除會話訊息', 
+            details: err.message 
+        });
     }
 };

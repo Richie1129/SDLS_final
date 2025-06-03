@@ -17,4 +17,7 @@ router.get('/ragflow-session/:userId/:sessionId', controller.getRagflowSessionId
 // 根據 userId 取得所有會話列表
 router.get('/sessions/:userId', controller.getUserSessions);
 
+// 新增：根據 userId 和 sessionId 刪除特定會話的所有訊息
+router.delete('/session/:userId/:sessionId', controller.deleteSessionMessages);
+
 module.exports = router;

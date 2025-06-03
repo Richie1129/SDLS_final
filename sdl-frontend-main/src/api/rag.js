@@ -43,3 +43,37 @@ export const getUserSessions = async (userId) => {
     const response = await ragApi.get(`/sessions/${userId}`);
     return response.data;
 }
+
+// 新增：刪除對話會話
+export const deleteSession = async (sessionId) => {
+    const API_URL = "/proxy/api/v1/chats/a159fe08e2d411efb3910242ac120004";
+    const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm";
+    
+    // 調用 RAGFlow API 刪除會話 - 使用正確的端點路徑
+    const response = await fetch(`${API_URL}/sessions`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+            ids: [sessionId]
+        }),
+    });
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`RAGFlow 刪除會話 API 回應：${response.status} - ${errorText}`);
+        throw new Error(`刪除會話失敗: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log("RAGFlow 刪除會話成功:", result);
+    return result;
+}
+
+// 新增：從後端資料庫刪除會話相關的訊息記錄
+export const deleteSessionMessages = async (userId, sessionId) => {
+    const response = await ragApi.delete(`/session/${userId}/${sessionId}`);
+    return response.data;
+}
