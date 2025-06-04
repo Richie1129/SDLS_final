@@ -2,7 +2,7 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true; 
 const kanbanApi = axios.create({
-    baseURL: "http://localhost/api/kanbans",
+    baseURL: "https://sdls.sdlswuret.systems/api/kanbans",
     headers:{
         "Content-Type":" application/json"
     },

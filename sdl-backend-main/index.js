@@ -36,14 +36,14 @@ const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm"; // 從前端程式�
 
 const io = new Server(server, {
     cors: {
-        origin: ['http://localhost'],
+        origin: ['https://sdls.sdlswuret.systems'],
         methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true
     },
 }); 
 
 app.use(cors({
-    origin: ['http://localhost'],
+    origin: ['https://sdls.sdlswuret.systems'],
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
@@ -633,6 +633,37 @@ app.post('/proxy/api/v1/chats/:chatId/completions', async (req, res) => {
     } catch (error) {
         console.error("代理請求失敗 (completions):", error.message);
         res.status(500).json({ message: "代理請求失敗", error: error.message });
+    }
+});
+
+// 新增：DELETE 會話的代理路由
+app.delete('/proxy/api/v1/chats/:chatId/sessions', async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        console.log("刪除會話代理請求 - chatId:", chatId);
+        console.log("req.body:", req.body);
+        
+        const response = await axios.delete(
+            `https://140.115.126.193/api/v1/chats/${chatId}/sessions`,
+            {
+                headers: {
+                    Authorization: `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                data: req.body, // DELETE 請求的 body 在 axios 中使用 data 參數
+                httpsAgent: agent, // 忽略證書驗證
+            }
+        );
+        console.log("RAGFlow 刪除會話回應:", response.data);
+        res.json(response.data);
+    } catch (error) {
+        console.error("代理請求失敗 (delete sessions):", error.message);
+        console.error("錯誤詳情:", error.response?.data || error.message);
+        res.status(error.response?.status || 500).json({ 
+            message: "代理請求失敗", 
+            error: error.message,
+            details: error.response?.data || null
+        });
     }
 });
 

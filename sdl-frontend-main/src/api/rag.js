@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const ragApi = axios.create({
-    baseURL: "http://localhost/api/rag_message",
+    baseURL: "https://sdls.sdlswuret.systems/api/rag_message",
     headers: {
         "Content-Type": "application/json"
     },
@@ -49,13 +49,16 @@ export const deleteSession = async (sessionId) => {
     const API_URL = "/proxy/api/v1/chats/a159fe08e2d411efb3910242ac120004";
     const API_KEY = "ragflow-U0ZTc4MzdlZTJjYjExZWZiMzcyMDI0Mm";
     
-    // 調用 RAGFlow API 刪除會話 - 將 sessionId 包含在 URL 路徑中
-    const response = await fetch(`${API_URL}/sessions/${sessionId}`, {
+    // 調用 RAGFlow API 刪除會話 - 正確的格式是傳送 ids 陣列
+    const response = await fetch(`${API_URL}/sessions`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${API_KEY}`,
         },
+        body: JSON.stringify({
+            ids: [sessionId]  // RAGFlow API 需要 ids 陣列
+        }),
     });
     
     if (!response.ok) {
@@ -72,5 +75,15 @@ export const deleteSession = async (sessionId) => {
 // 新增：從後端資料庫刪除會話相關的訊息記錄
 export const deleteSessionMessages = async (userId, sessionId) => {
     const response = await ragApi.delete(`/session/${userId}/${sessionId}`);
+    return response.data;
+}
+
+// 新增：創建新會話並保存開場白到資料庫
+export const createNewSessionInDB = async (userId, sessionId, userName) => {
+    const response = await ragApi.post('/create-session', {
+        userId,
+        sessionId,
+        userName
+    });
     return response.data;
 }

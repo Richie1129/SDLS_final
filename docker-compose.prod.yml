@@ -1,29 +1,33 @@
 services:
   nginx:
-    image: nginx
-    restart: always
-    ports:
-      - 80:80    
-      - 443:443
-    volumes:
-      - "./nginx.conf:/etc/nginx/nginx.conf"
-      - "./letsencrypt:/etc/letsencrypt"
-      - "./www:/var/www/html"
-    depends_on:
-      - api
-      - front
-    networks:
-      - agent_network
+      image: nginx
+      restart: always
+      # ports:
+      #   - 9080:80  # 僅供本地除錯／測試用，NPM 請透過網路直連 port 80
+      volumes:
+        - "./nginx.conf:/etc/nginx/nginx.conf"
+        # - "./letsencrypt:/etc/letsencrypt"
+        - "./www:/var/www/html"
+      depends_on:
+        - api
+        - front
+      networks:
+        - agent_network
+        - npm-shared  # 給 NPM 轉送使用
+      expose: 
+        - 80
 
-  certbot:
-    image: certbot/certbot
-    restart: always
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    ports:
+      - "80:80"
+      - "81:81"    # 管理介面（Web UI）
+      - "443:443"
     volumes:
-      - "./letsencrypt:/etc/letsencrypt"
-      - "./www:/var/www/html"
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-    depends_on:
-      - nginx
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    restart: unless-stopped
     networks:
       - agent_network
 
@@ -79,18 +83,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=wulab@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=ytwu35415
-    ports:
-      - "5555:80"
-    networks:
-      - agent_network
 networks:
   agent_network:
+  npm-shared:
+    name: npm-shared
 
 volumes:
-  postgres_data: 
+  postgres_data:

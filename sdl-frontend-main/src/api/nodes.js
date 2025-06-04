@@ -2,7 +2,7 @@ import axios from "axios";
 
 
 const nodeApi = axios.create({
-    baseURL: "http://localhost/api/node",
+    baseURL: "https://sdls.sdlswuret.systems/api/node",
     headers:{
         "Content-Type":" application/json"
     },
